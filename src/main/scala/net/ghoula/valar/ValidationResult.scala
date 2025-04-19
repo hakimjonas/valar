@@ -1,11 +1,10 @@
-package net.ghoula.valar // Corrected package
+package net.ghoula.valar
 
 import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
-import net.ghoula.valar.internal.ErrorAccumulator
-import net.ghoula.valar.internal.MacroHelpers
+import net.ghoula.valar.internal.{ErrorAccumulator, MacroHelpers}
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try} // Use fully qualified or import
+import scala.util.{Failure, Success, Try}
 
 /** Represents the result of a validation. Either a valid value of type A or an accumulation of
   * validation errors.
@@ -57,7 +56,7 @@ object ValidationResult {
         invalid(es)
       case Left(_) =>
         invalid(
-          ValidationErrors.ValidationError( // Use public factory
+          ValidationErrors.ValidationError(
             message = "Programmer error: Cannot create Invalid ValidationResult from an empty error vector",
             code = Some("validation.error.fromEither.empty"),
             severity = Some("Error")
@@ -72,7 +71,7 @@ object ValidationResult {
     case a: A => validator.validate(a)
     case _ =>
       invalid(
-        ValidationErrors.ValidationError(s"Value is not of type ${ct.runtimeClass.getSimpleName}") // Use public factory
+        ValidationErrors.ValidationError(s"Value is not of type ${ct.runtimeClass.getSimpleName}")
       )
   }
 
@@ -89,7 +88,6 @@ object ValidationResult {
     val resultB = validateType[B](value)(using vb, ctB)
 
     (resultA, resultB) match {
-      // FIX: Use MacroHelpers.upcastTo instead of MacroHelpers.Upcast
       case (Valid(_), _) => MacroHelpers.upcastTo(resultA)
       case (_, Valid(_)) => MacroHelpers.upcastTo(resultB)
       case (Invalid(errsA), Invalid(errsB)) =>
@@ -99,10 +97,9 @@ object ValidationResult {
         val summaryMessage = s"Value failed validation for all expected types: $expectedTypes"
         val allNestedErrors: Vector[ValidationError] = errsA ++ errsB
 
-        val combinedError: ValidationError = ValidationErrors.ValidationError( // Use public factory
+        val combinedError: ValidationError = ValidationErrors.ValidationError(
           message = summaryMessage,
           fieldPath = Nil,
-          // FIX: Pass Vector[ValidationError] directly (assuming factory handles conversion)
           children = allNestedErrors,
           code = None,
           severity = None,
@@ -142,7 +139,6 @@ object ValidationResult {
     def or[B](
       that: ValidationResult[B]
     )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[A | B] = (vr, that) match {
-      // FIX: Use MacroHelpers.upcastTo instead of MacroHelpers.Upcast
       case (Valid(_), _) => MacroHelpers.upcastTo(vr)
       case (_, Valid(_)) => MacroHelpers.upcastTo(that)
       case (Invalid(errsA), Invalid(errsB)) => Invalid(acc.combine(errsA, errsB))

@@ -1,7 +1,6 @@
 package net.ghoula.valar
 
 import scala.util.control.NoStackTrace
-// No direct import of InternalValidationError needed here due to opaque type workings
 
 /** Defines the public API for validation errors and related exceptions. */
 object ValidationErrors {
@@ -11,7 +10,7 @@ object ValidationErrors {
     * matching on the internal representation, ensuring API stability. Use the methods on the
     * companion object or extensions to interact with errors.
     */
-  opaque type ValidationError = InternalValidationError // Opaque alias hides internal type
+  opaque type ValidationError = InternalValidationError
 
   object ValidationError {
 
@@ -19,7 +18,7 @@ object ValidationErrors {
     def apply(
       message: String,
       fieldPath: List[String] = Nil,
-      children: Vector[ValidationError] = Vector.empty, // Still accepts internal type here
+      children: Vector[ValidationError] = Vector.empty,
       code: Option[String] = None,
       severity: Option[String] = None,
       expected: Option[String] = None,
@@ -29,12 +28,12 @@ object ValidationErrors {
 
     /** Constructs a nested error for a specific field, wrapping existing errors as children. */
     def nestField(field: String, errors: Vector[ValidationError]): ValidationError =
-      InternalValidationError.nestField(field, errors.map(_.internal)) // Use internal factory via ve.internal
+      InternalValidationError.nestField(field, errors.map(_.internal))
 
     /** Creates a simple error message for a failed union type validation. */
     def unionError(value: Any, types: String*): ValidationError = {
       val expected = types.mkString(" | ")
-      ValidationError( // Use the public apply method
+      ValidationError(
         message = s"Value is not one of the expected types: $expected",
         expected = Some(expected),
         actual = Some(value.toString)
@@ -49,7 +48,7 @@ object ValidationErrors {
 
     /** Accesses the internal representation. Restricted to the library package `ghoula.net.valar`.
       */
-    private[valar] def internal: InternalValidationError = ve // Scope to 'valar' package segment
+    private[valar] def internal: InternalValidationError = ve
 
     /** Provides a compact, single-line string representation. */
     def show: String = internal.show
@@ -59,8 +58,7 @@ object ValidationErrors {
 
     /** Annotates an existing error with the context of the field it belongs to. */
     def annotateField(field: String, fieldType: String): ValidationError = {
-      val internalError = ve.internal // Use the private[valar] accessor
-      // Create new internal error, implicitly converted back to opaque type
+      val internalError = ve.internal
       InternalValidationError(
         message = s"Invalid field: $field, field type: $fieldType: ${internalError.message}",
         fieldPath = field :: internalError.fieldPath,
@@ -72,11 +70,10 @@ object ValidationErrors {
       )
     }
 
-    // --- Public Accessors for Error Details ---
     def message: String = internal.message
     def fieldPath: List[String] = internal.fieldPath
     def children: Vector[ValidationError] =
-      internal.children.map(identity) // Convert Vector[Internal] to Vector[Opaque]
+      internal.children.map(identity)
     def code: Option[String] = internal.code
     def severity: Option[String] = internal.severity
     def expected: Option[String] = internal.expected
@@ -91,13 +88,10 @@ object ValidationErrors {
   }
 }
 
-// --- Internal Implementation Detail ---
-// Moved private[validation] -> private[valar] for library-internal visibility
-
 /** Internal representation of a validation error, hidden by the opaque type
   * [[ValidationErrors.ValidationError]].
   */
-private[valar] final case class InternalValidationError( // Corrected visibility
+private[valar] final case class InternalValidationError(
   message: String,
   fieldPath: List[String] = Nil,
   children: Vector[InternalValidationError] = Vector.empty,
@@ -147,7 +141,7 @@ private[valar] final case class InternalValidationError( // Corrected visibility
 }
 
 /** Companion object for [[InternalValidationError]]. */
-private[valar] object InternalValidationError { // Corrected visibility
+private[valar] object InternalValidationError {
 
   /** Creates a standard error message format for a field containing nested errors. */
   def nestField(field: String, errors: Vector[InternalValidationError]): InternalValidationError =

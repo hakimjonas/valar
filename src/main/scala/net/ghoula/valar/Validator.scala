@@ -9,7 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.compiletime.{constValueTuple, summonInline}
 import scala.deriving.Mirror
 import scala.quoted.{Expr, Quotes, Type}
-import scala.reflect.ClassTag // FIX 1a: Correct wildcard import
+import scala.reflect.ClassTag
 
 /** Typeclass defining a validation contract for a specific type `A`. */
 trait Validator[A] {
@@ -24,24 +24,23 @@ object Validator {
   /** Summons an implicit [[Validator]] instance for type `A`. */
   def apply[A](using v: Validator[A]): Validator[A] = v
 
-  // Use imported helpers directly
   given positiveIntValidator: Validator[Int] with {
-    def validate(i: Int): ValidationResult[Int] = positiveInt(i) // FIX 1b: Remove qualifier
+    def validate(i: Int): ValidationResult[Int] = positiveInt(i)
   }
   given finiteFloatValidator: Validator[Float] with {
-    def validate(f: Float): ValidationResult[Float] = finiteFloat(f) // FIX 1b: Remove qualifier
+    def validate(f: Float): ValidationResult[Float] = finiteFloat(f)
   }
   given finiteDoubleValidator: Validator[Double] with {
-    def validate(d: Double): ValidationResult[Double] = finiteDouble(d) // FIX 1b: Remove qualifier
+    def validate(d: Double): ValidationResult[Double] = finiteDouble(d)
   }
   given nonEmptyStringValidator: Validator[String] with {
-    def validate(s: String): ValidationResult[String] = nonEmpty(s) // FIX 1b: Remove qualifier
+    def validate(s: String): ValidationResult[String] = nonEmpty(s)
   }
   given default[A]: Validator[A] with {
     def validate(a: A): ValidationResult[A] = ValidationResult.Valid(a)
   }
   given listValidator[A](using v: Validator[A]): Validator[List[A]] with {
-    def validate(xs: List[A]): ValidationResult[List[A]] = { /* ... unchanged ... */
+    def validate(xs: List[A]): ValidationResult[List[A]] = {
       val results = xs.map(v.validate)
       val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], List.empty[A])) {
         case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
@@ -51,7 +50,7 @@ object Validator {
     }
   }
   given seqValidator[A](using v: Validator[A]): Validator[Seq[A]] with {
-    def validate(xs: Seq[A]): ValidationResult[Seq[A]] = { /* ... unchanged ... */
+    def validate(xs: Seq[A]): ValidationResult[Seq[A]] = {
       val results = xs.map(v.validate)
       val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Seq.empty[A])) {
         case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
@@ -61,7 +60,7 @@ object Validator {
     }
   }
   given vectorValidator[A](using v: Validator[A]): Validator[Vector[A]] with {
-    def validate(xs: Vector[A]): ValidationResult[Vector[A]] = { /* ... unchanged ... */
+    def validate(xs: Vector[A]): ValidationResult[Vector[A]] = {
       val results = xs.map(v.validate)
       val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
         case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
@@ -71,7 +70,7 @@ object Validator {
     }
   }
   given setValidator[A](using v: Validator[A]): Validator[Set[A]] with {
-    def validate(xs: Set[A]): ValidationResult[Set[A]] = { /* ... unchanged ... */
+    def validate(xs: Set[A]): ValidationResult[Set[A]] = {
       val results = xs.map(v.validate)
       val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Set.empty[A])) {
         case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals + a)
@@ -88,16 +87,16 @@ object Validator {
           case ValidationResult.Invalid(es) =>
             ValidationResult.Invalid(
               es.map(e => e.annotateField("key", k.getClass.getSimpleName))
-            ) // FIX 2: Use direct extension call
+            )
         }
         val validatedValue: ValidationResult[V] = vv.validate(v) match {
           case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
           case ValidationResult.Invalid(es) =>
             ValidationResult.Invalid(
               es.map(e => e.annotateField("value", v.getClass.getSimpleName))
-            ) // FIX 2: Use direct extension call
+            )
         }
-        validatedKey.zip(validatedValue) // FIX 2: Use direct extension call
+        validatedKey.zip(validatedValue)
       }
       val (errors, validPairs) = results.foldLeft((Vector.empty[ValidationError], Map.empty[K, V])) {
         case ((errs, acc), ValidationResult.Valid(pair)) => (errs, acc + pair)
@@ -122,7 +121,7 @@ object Validator {
     }
   }
   given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A]): Validator[ArraySeq[A]] with {
-    def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] = { /* ... unchanged ... */
+    def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] = {
       val results = xs.map(v.validate)
       val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
         case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
@@ -134,7 +133,7 @@ object Validator {
   }
   given intersectionValidator[A, B](using va: Validator[A], vb: Validator[B]): Validator[A & B] with {
     def validate(ab: A & B): ValidationResult[A & B] =
-      va.validate(ab).zip(vb.validate(ab)).map(_ => ab) // FIX 2: Use direct extension call
+      va.validate(ab).zip(vb.validate(ab)).map(_ => ab)
   }
   given unionValidator[A, B](using va: Validator[A], vb: Validator[B], ctA: ClassTag[A], ctB: ClassTag[B]): Validator[
     A | B
@@ -142,13 +141,12 @@ object Validator {
     def validate(value: A | B): ValidationResult[A | B] = Validation.validateUnion[A, B](value)(using va, vb, ctA, ctB)
   }
 
-  // --- Macro Derivation ---
   inline def deriveValidatorMacro[T <: Product](using m: Mirror.ProductOf[T]): Validator[T] =
     ${ deriveValidatorMacroImpl[T, m.MirroredElemTypes, m.MirroredElemLabels]('m) }
 
   private def deriveValidatorMacroImpl[T <: Product: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
-  )(using q: Quotes): Expr[Validator[T]] = { /* ... unchanged ... */
+  )(using q: Quotes): Expr[Validator[T]] = {
     import q.reflect.*
     if !(TypeRepr.of[Elems] <:< TypeRepr.of[Tuple]) then
       report.errorAndAbort(s"deriveValidatorMacro: Expected Elems to be a Tuple type, but got ${Type.show[Elems]}")
@@ -169,7 +167,7 @@ object Validator {
   private def validateTupleWithLabelsMacro[Elems <: Tuple: Type, Labels <: Tuple: Type](
     values: Expr[Elems],
     labels: Expr[Labels]
-  )(using q: Quotes): Expr[ValidationResult[Elems]] = { /* ... unchanged ... */
+  )(using q: Quotes): Expr[ValidationResult[Elems]] = {
     import q.reflect.*
     (TypeRepr.of[Elems].dealias, TypeRepr.of[Labels].dealias) match {
       case (elemsType, _) if elemsType <:< TypeRepr.of[EmptyTuple] =>
@@ -209,14 +207,13 @@ object Validator {
                         case ValidationResult.Invalid(errs) =>
                           ValidationResult.Invalid(
                             errs.map(e => e.annotateField(headLabel, fieldTypeNameValue))
-                          ) // FIX 2: Use direct extension call
+                          )
                       }
                     val tailValidation: ValidationResult[tElems] = ${
                       validateTupleWithLabelsMacro[tElems, tLabels]('{ tail }, '{ tailLabels })
                     }
-                    headValidation.zip(tailValidation).map {
-                      case (hValidated, tValidated) => // FIX 2: Use direct extension call
-                        MacroHelpers.upcastTo[Elems](hValidated *: tValidated)
+                    headValidation.zip(tailValidation).map { case (hValidated, tValidated) =>
+                      MacroHelpers.upcastTo[Elems](hValidated *: tValidated)
                     }
                   }
                 }

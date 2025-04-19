@@ -1,6 +1,4 @@
-package net.ghoula.valar.internal // Corrected package
-
-// Keep this internal to the library using package-private (default access within 'internal')
+package net.ghoula.valar.internal
 
 /** Typeclass for accumulating errors of type E. Allows defining how two instances of an error type
   * should be combined.
