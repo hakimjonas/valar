@@ -1,4 +1,4 @@
-package net.ghoula.valar 
+package net.ghoula.valar
 
 import scala.reflect.ClassTag
 

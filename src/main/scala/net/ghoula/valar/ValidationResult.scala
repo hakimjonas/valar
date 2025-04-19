@@ -41,13 +41,13 @@ object ValidationResult {
     Invalid(errors)
   }
 
-  /** Converts an `Either[ValidationError, A]` to a [[ValidationResult]]. */
+  /** Converts an [[ Either [ValidationError, A] ]] to a [[ValidationResult]]. */
   def fromEither[A](either: Either[ValidationError, A]): ValidationResult[A] = either match {
     case Right(a) => valid(a)
     case Left(e) => invalid(e)
   }
 
-  /** Converts an `Either[Vector[ValidationError], A]` into a [[ValidationResult]]. */
+  /** Converts an [[ Either[Vector[ValidationError], A] ]] into a [[ValidationResult]]. */
   def fromEitherErrors[A](either: Either[Vector[ValidationError], A]): ValidationResult[A] =
     either match {
       case Right(a) =>
