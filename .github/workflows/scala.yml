@@ -1,5 +1,4 @@
-# .github/workflows/scala-ci.yml
-name: Scala CI
+name: Scala CI + SLSA Provenance
 
 on:
   push:
@@ -10,11 +9,14 @@ on:
       - main
 
 permissions:
-  contents: write  
+  id-token: write       
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }} 
 
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +29,33 @@ jobs:
           cache: sbt
 
       - name: Set up sbt launcher
-        uses: sbt/setup-sbt@v1  
+        uses: sbt/setup-sbt@v1
 
       - name: Check format, lint, and run tests
         run: sbt check test
 
       - name: Upload dependency graph
         uses: scalacenter/sbt-dependency-submission@v3
+
+      - name: Package artifact                    
+        run: sbt clean package                    
+
+      - name: Compute artifact digest             
+        id: hash                                   
+        run: |
+          ARTIFACT=$(find target -type f -name "*.jar" | head -n1)
+          SHA256=$(sha256sum "$ARTIFACT" | awk '{print $1}')
+          BASE64=$(echo "$SHA256" | xxd -r -p | base64 -w0)
+          echo "hashes=${BASE64} ${ARTIFACT##*/}" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    needs: build
+    permissions:
+      actions: read     # to fetch the reusable workflow definition :contentReference[oaicite:0]{index=0}
+      id-token: write   # for Sigstore OIDC signing
+      contents: write   # to upload assets to a GitHub Release
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-assets: ${{ startsWith(github.ref, 'refs/tags/') }}
 
