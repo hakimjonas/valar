@@ -1,36 +1,37 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
+# .github/workflows/scala-ci.yml
 name: Scala CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 permissions:
-  contents: read 
+  contents: write  
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'sbt' 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: sbt
 
-    - name: Check format, lint, and run tests
-      run: sbt check test 
-      
-    - name: Upload dependency graph
-      uses: scalacenter/sbt-dependency-submission@v2 
+      - name: Set up sbt launcher
+        uses: sbt/setup-sbt@v1  
+
+      - name: Check format, lint, and run tests
+        run: sbt check test
+
+      - name: Upload dependency graph
+        uses: scalacenter/sbt-dependency-submission@v3
+
