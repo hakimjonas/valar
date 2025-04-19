@@ -33,4 +33,4 @@ jobs:
       run: sbt check test 
       
     - name: Upload dependency graph
-      uses: scalacenter/sbt-dependency-submission@ab086b50c941c9774b70f39fc7f6e20ca2706c91
+      uses: scalacenter/sbt-dependency-submission@v2 
