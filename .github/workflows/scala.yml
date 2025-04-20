@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*' # Allows triggering provenance job
+      - 'v*' # Ensure this pattern matches your tags
   pull_request:
     branches:
       - main
@@ -15,6 +15,14 @@ permissions:
   id-token: write
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
   build:
     runs-on: ubuntu-latest
     permissions:
