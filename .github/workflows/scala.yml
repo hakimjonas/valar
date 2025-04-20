@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*' # Ensure this pattern matches your tags
+      - 'v*' # Ensure this pattern matches the tags you are pushing
   pull_request:
     branches:
       - main
