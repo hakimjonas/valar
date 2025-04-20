@@ -64,23 +64,22 @@ jobs:
           echo "Determined Project Version: $PROJECT_VERSION"
 
           # Look for JAR using project name and version from dynver
-          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*_${PROJECT_VERSION}.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-
-          # Fallback to previous find if versioned name fails
-          if [ ! -f "$JAR_PATH" ]; then
-             echo "Warning: Could not find JAR with dynver version, falling back to pattern matching."
-             JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          fi
+          # Note: Using simpler fallback directly as it worked, adjust if needed
+          echo "Attempting to find JAR using fallback pattern..."
+          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
 
           if [ ! -f "$JAR_PATH" ]; then
-            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
+            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR using pattern 'valar*.jar'!"
             exit 1
           fi
           echo "Found JAR: $JAR_PATH"
 
-          POM_PATH="$SCALA_VERSION_DIR/pom.xml"
+          # Find POM file using pattern matching its generated name
+          echo "Attempting to find POM using pattern..."
+          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1) # Use find for POM
+
           if [ ! -f "$POM_PATH" ]; then
-            echo "Error: pom.xml not found in $SCALA_VERSION_DIR! Did 'sbt makePom' run?"
+            echo "Error: POM file not found in $SCALA_VERSION_DIR using pattern 'valar*.pom'! Did 'sbt makePom' run and output logs show it being written?"
             exit 1
           fi
           echo "Found POM: $POM_PATH"
