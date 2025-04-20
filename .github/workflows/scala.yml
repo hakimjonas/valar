@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*' # Ensure this pattern matches the tags you are pushing
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -107,10 +107,11 @@ jobs:
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
       upload-tag-name: ${{ github.ref_name }}
+      path: ${{ needs.build.outputs.artifact_path }} # Ensure the path input is provided
 
   upload-release-artifact:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, provenance]
+    needs: [ build, provenance ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
