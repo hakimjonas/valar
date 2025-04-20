@@ -115,13 +115,17 @@ jobs:
     steps:
       - name: Checkout repository (needed for gh cli context)
         uses: actions/checkout@v4
+        # fetch-depth needed if GPG signing/release notes depend on history
+        # Keep fetch-depth: 0 for dynver compatibility if re-enabled later
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17 (might not be needed, but harmless)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'sbt'
+          cache: 'sbt' # Cache might speed up if sbt is used, otherwise remove
 
       - name: Import GPG key
         id: import_gpg
@@ -156,9 +160,6 @@ jobs:
           gpg --batch --yes --detach-sign --armor "$POM_FILE"
           echo "Contents after signing:"
           ls -l
-        env:
-        # Pass passphrase directly to GPG if needed (should use agent from import_gpg ideally)
-        # GPG_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Usually not needed as import action sets up agent
 
       - name: Create GitHub Release and Upload Assets
         env:
@@ -175,9 +176,14 @@ jobs:
 
           echo "Uploading assets..."
           cd ./release-assets
-          gh release upload "$TAG_NAME" \
-            "$JAR_FILE" \
-            "$JAR_FILE.asc" \
-            "$POM_FILE" \
-            "$POM_FILE.asc" \
-            --clobber # Overwrite assets if release/tag already exists
+          # Define files to upload
+          FILES_TO_UPLOAD=("$JAR_FILE" "$JAR_FILE.asc" "$POM_FILE" "$POM_FILE.asc")
+          # Check if files exist before uploading
+          for FILE in "${FILES_TO_UPLOAD[@]}"; do
+            if [ ! -f "$FILE" ]; then
+              echo "Error: Asset file not found - $FILE"
+              exit 1
+            fi
+          done
+          # Upload all specified files
+          gh release upload "$TAG_NAME" "${FILES_TO_UPLOAD[@]}" --clobber
