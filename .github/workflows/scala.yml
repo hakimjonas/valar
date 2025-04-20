@@ -1,37 +1,32 @@
-name: Scala CI + SLSA Provenance
+name: Scala CI and Release
 
-# Standard space indentation used below
 on:
   push:
     branches:
       - main
     tags:
-      - 'v*' # Ensure this pattern matches the tags you are pushing
+      - 'v*' # Trigger publish job on version tags
   pull_request:
     branches:
       - main
 
 permissions:
+  # Default read permission sufficient for build job's needs (checkout)
   contents: read
-  id-token: write
+  # id-token needed by crazy-max/ghaction-import-gpg for provenance?
+  # Let's grant it globally just in case, though may not be strictly needed by sbt publishSigned itself
+  id-token: write # Added in case release plugins use OIDC
 
 jobs:
-  debug: # Keeping the debug job for now
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
   build:
     runs-on: ubuntu-latest
+    # Need write permission for actions/upload-artifact
     permissions:
       contents: write
     outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
-      artifact_name: ${{ steps.hash.outputs.artifact_name }}
-      artifact_path: ${{ steps.hash.outputs.artifact_path }}
+      artifact_name_base: ${{ steps.set_paths.outputs.artifact_name_base }} # Base name like valar_3-0.1.0
+      scala_version_major: ${{ steps.set_paths.outputs.scala_version_major }} # Scala major version like 3
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,89 +41,131 @@ jobs:
       - name: Set up sbt launcher
         uses: sbt/setup-sbt@v1
 
-      - name: Check build.sbt and Environment (for debugging)
-        run: |
-          echo "--- build.sbt content ---"
-          cat build.sbt || echo "build.sbt not found?"
-          echo "--- Java version ---"
-          java -version
-          echo "--- sbt version info ---"
-          sbt sbtVersion about || echo "sbt command failed"
-          echo "--- Working Directory ---"
-          pwd
-          ls -la
-
       - name: Check format, lint, and run tests
         run: sbt check test
 
-      - name: Upload dependency graph
-        uses: scalacenter/sbt-dependency-submission@v3
-
-      - name: Package artifact
-        run: sbt clean package
-
-      - name: Compute artifact digest (Correct SLSA Format) and Prepare Info
-        id: hash
+      - name: Package artifact and generate POM
         run: |
-          ARTIFACT_PATH=$(find target/scala-*/ -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          if [ -z "$ARTIFACT_PATH" ]; then
-            echo "Warning: Specific artifact find failed, falling back to general search."
-            ARTIFACT_PATH=$(find target -type f -name "*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          fi
-          if [ ! -f "$ARTIFACT_PATH" ]; then
-            echo "Error: Built artifact not found at $ARTIFACT_PATH!"
+          sbt clean package makePom # package creates JAR, makePom creates target/.../pom.xml
+
+      # Determine artifact paths and names dynamically
+      - name: Set artifact paths and names
+        id: set_paths
+        run: |
+          SCALA_VERSION_DIR=$(find target -maxdepth 1 -type d -name "scala-*" | head -n1)
+          if [ -z "$SCALA_VERSION_DIR" ]; then
+            echo "Error: Scala version directory not found in target!"
             exit 1
           fi
-          ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")
-          SHA256_HEX=$(sha256sum "$ARTIFACT_PATH" | awk '{print $1}')
-          SUBJECT_LINE="sha256:$SHA256_HEX $ARTIFACT_NAME"
-          BASE64_SUBJECTS=$(echo -n "$SUBJECT_LINE" | base64 -w0)
-          echo "hashes=$BASE64_SUBJECTS" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
-          echo "artifact_path=$ARTIFACT_PATH" >> "$GITHUB_OUTPUT"
-          echo "Artifact Path: $ARTIFACT_PATH"
-          echo "Artifact Name: $ARTIFACT_NAME"
+          echo "Found Scala dir: $SCALA_VERSION_DIR"
 
-      - name: Upload artifact for release job
+          # Use sbt-dynver to get the version for naming consistency if possible, fallback otherwise
+          PROJECT_VERSION=$(sbt -Dsbt.server.forcestart=true -batch -error 'print version') || echo "0.0.0-SNAPSHOT"
+          echo "Determined Project Version: $PROJECT_VERSION"
+
+          # Look for JAR using project name and version from dynver
+          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*_${PROJECT_VERSION}.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
+
+          # Fallback to previous find if versioned name fails
+          if [ ! -f "$JAR_PATH" ]; then
+             echo "Warning: Could not find JAR with dynver version, falling back to pattern matching."
+             JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
+          fi
+
+          if [ ! -f "$JAR_PATH" ]; then
+            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
+            exit 1
+          fi
+          echo "Found JAR: $JAR_PATH"
+
+          POM_PATH="$SCALA_VERSION_DIR/pom.xml"
+          if [ ! -f "$POM_PATH" ]; then
+            echo "Error: pom.xml not found in $SCALA_VERSION_DIR! Did 'sbt makePom' run?"
+            exit 1
+          fi
+          echo "Found POM: $POM_PATH"
+
+          # Extract base name (e.g., valar_3-0.1.1) and Scala major version for artifact naming
+          ARTIFACT_FILENAME=$(basename "$JAR_PATH" .jar)
+          SCALA_MAJOR_VERSION=$(basename "$SCALA_VERSION_DIR" | sed 's/scala-//') # e.g., 3.6.4
+          SCALA_MAJOR_VERSION=${SCALA_MAJOR_VERSION%%.*} # Extract major version '3'
+
+          echo "artifact_name_base=$ARTIFACT_FILENAME" >> "$GITHUB_OUTPUT"
+          echo "scala_version_major=$SCALA_MAJOR_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Prepare staging directory for upload
+          mkdir -p staging
+          cp "$JAR_PATH" staging/
+          cp "$POM_PATH" staging/
+          echo "Contents of staging:"
+          ls -l staging
+
+      - name: Upload Jar and POM for publish job
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.hash.outputs.artifact_name }}
-          path: ${{ steps.hash.outputs.artifact_path }}
+          name: build-artifacts-${{ steps.set_paths.outputs.scala_version_major }} # Include Scala version in artifact name
+          path: staging/ # Upload the contents of the staging directory
           retention-days: 1
 
-  provenance:
+  publish:
+    # Run only when a 'v*' tag is pushed
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    # Revert to a specific v2 tag known to exist, to fix fetching error
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    with:
-      base64-subjects: ${{ needs.build.outputs.hashes }}
-      upload-tag-name: ${{ github.ref_name }}
-
-  upload-release-artifact:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [ build, provenance ]
+    needs: build # Wait for build job to complete
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      # Read contents for checkout
+      contents: read
+      # id-token needed by crazy-max/ghaction-import-gpg potentially
+      id-token: write
+
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          name: ${{ needs.build.outputs.artifact_name }}
+          # Fetch all history for sbt-dynver to determine version correctly
+          fetch-depth: 0
 
-      - name: Display structure after download
-        run: ls -R
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
 
-      - name: Upload artifact to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT_NAME: ${{ needs.build.outputs.artifact_name }}
-          TAG_NAME: ${{ github.ref_name }}
+      - name: Set up sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Import GPG key
+        id: import_gpg # Give step an ID
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.PGP_SECRET }}
+          passphrase: ${{ secrets.PGP_PASSPHRASE }}
+
+      # This step ensures the PGP key ID is available if needed by sbt-pgp explicitly
+      # Although often sbt-pgp finds it automatically after import
+      - name: Check GPG Key ID
         run: |
-          echo "Uploading $ARTIFACT_NAME to release $TAG_NAME"
-          gh release upload "$TAG_NAME" "$ARTIFACT_NAME" --clobber
+          echo "GPG Key ID found: ${{ steps.import_gpg.outputs.keyid }}"
+      
+
+      # Download step remains commented out - publishSigned will rebuild/repackage
+      # - name: Download Jar and POM from build job
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: build-artifacts-${{ needs.build.outputs.scala_version_major }}
+      #     path: target/scala-${{ needs.build.outputs.scala_version_major }}/ # Adjust path if needed
+
+      - name: Publish to Sonatype OSSRH
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        # 'publishSigned' triggers GPG signing via sbt-pgp and uploads
+        # Assumes build.sbt is configured with 'publishTo' and sbt-pgp/sbt-sonatype
+        # Assumes sbt-dynver provides the correct version from the tag
+        run: sbt publishSigned
+
+      # Optional: Create GitHub Release steps remain commented out
+      # - name: Create GitHub Release ...
+      # - name: Upload assets to GitHub Release ...
