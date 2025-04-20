@@ -103,16 +103,15 @@ jobs:
       actions: read
       id-token: write
       contents: write
-    # Use @v2 for latest stable v2 release, removed incorrect 'path:' input
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2
+    # Revert to a specific v2 tag known to exist, to fix fetching error
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
       upload-tag-name: ${{ github.ref_name }}
-      # Removed 'path:' input as it's likely incorrect for this generator
 
   upload-release-artifact:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, provenance]
+    needs: [ build, provenance ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
