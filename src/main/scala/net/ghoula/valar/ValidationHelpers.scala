@@ -5,7 +5,13 @@ import net.ghoula.valar.ValidationErrors.ValidationError
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
-/** Collection of simple, reusable validation helper functions.
+/** Provides reusable helper functions for common validation scenarios.
+  *
+  * Includes utilities for:
+  *   - Non-empty string validation
+  *   - Numeric validation (positive integers, finite floats/doubles)
+  *   - Regex pattern matching with robust error handling
+  *   - Optional and required field handling
   */
 object ValidationHelpers {
 

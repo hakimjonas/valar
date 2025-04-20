@@ -11,10 +11,23 @@ import scala.deriving.Mirror
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
-/** Typeclass defining a validation contract for a specific type `A`. */
+/** A typeclass for defining custom validation logic for type `A`.
+  *
+  * Validators encapsulate the validation rules for a specific type and produce structured
+  * `ValidationResult`s.
+  *
+  * @tparam A
+  *   the type to be validated
+  */
 trait Validator[A] {
 
-  /** Validates an instance of type `A`. */
+  /** Validate an instance of type `A`.
+    *
+    * @param a
+    *   the instance to validate
+    * @return
+    *   ValidationResult[A] representing validation success or accumulated errors
+    */
   def validate(a: A): ValidationResult[A]
 }
 
@@ -141,6 +154,24 @@ object Validator {
     def validate(value: A | B): ValidationResult[A | B] = Validation.validateUnion[A, B](value)(using va, vb, ctA, ctB)
   }
 
+  /** Automatically derives a `Validator` for case classes using Scala 3 macros.
+    *
+    * Derivation is recursive, validating each field using implicitly available validators. Errors
+    * from nested fields are aggregated and annotated with clear field context.
+    *
+    * Example usage:
+    * {{{
+    *   case class User(name: String, age: Int)
+    *   given Validator[User] = deriveValidatorMacro
+    * }}}
+    *
+    * @tparam T
+    *   case class type to derive validator for
+    * @param m
+    *   implicit Scala 3 Mirror for reflection
+    * @return
+    *   Validator[T] automatically derived validator instance
+    */
   inline def deriveValidatorMacro[T <: Product](using m: Mirror.ProductOf[T]): Validator[T] =
     ${ deriveValidatorMacroImpl[T, m.MirroredElemTypes, m.MirroredElemLabels]('m) }
 

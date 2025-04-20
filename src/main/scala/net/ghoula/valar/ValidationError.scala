@@ -5,10 +5,29 @@ import scala.util.control.NoStackTrace
 /** Defines the public API for validation errors and related exceptions. */
 object ValidationErrors {
 
-  /** Public opaque type for validation errors. Internally represented as
-    * [[InternalValidationError]]. This prevents users from directly constructing or pattern
-    * matching on the internal representation, ensuring API stability. Use the methods on the
-    * companion object or extensions to interact with errors.
+  /** Represents detailed validation errors with structured information.
+    *
+    * Provides a rich error context including the specific field path, expected vs actual values,
+    * and optional error codes and severity indicators.
+    *
+    * Internally represented as [[InternalValidationError]]. This prevents users from directly
+    * constructing or pattern matching on the internal representation, ensuring API stability. Use
+    * the methods on the companion object or extensions to interact with errors.
+    *
+    * @param message
+    *   human-readable error message
+    * @param fieldPath
+    *   path to the problematic field in nested objects
+    * @param children
+    *   nested child errors, useful for aggregating errors from complex objects
+    * @param code
+    *   optional application-specific error code
+    * @param severity
+    *   optional severity level (`Error`, `Warning`)
+    * @param expected
+    *   description of the expected format or value
+    * @param actual
+    *   description of the actual problematic value
     */
   opaque type ValidationError = InternalValidationError
 

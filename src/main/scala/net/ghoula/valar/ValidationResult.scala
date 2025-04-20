@@ -6,17 +6,29 @@ import net.ghoula.valar.internal.{ErrorAccumulator, MacroHelpers}
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-/** Represents the result of a validation. Either a valid value of type A or an accumulation of
-  * validation errors.
+/** Represents the result of a validation process, either a valid value or validation errors.
+  *
+  * Supports two primary error handling strategies:
+  *   - Error accumulation (default) for gathering multiple validation errors.
+  *   - Fail-fast for immediate error handling.
+  *
   * @tparam A
   *   The type of the value in case of successful validation.
   */
 enum ValidationResult[+A] {
 
-  /** Represents a successful validation containing the valid value. */
+  /** Successful validation result holding a validated value.
+    *
+    * @param value
+    *   the successfully validated value
+    */
   case Valid(value: A) extends ValidationResult[A]
 
-  /** Represents a failed validation containing a non-empty Vector of validation errors. */
+  /** Failed validation result holding accumulated validation errors.
+    *
+    * @param errors
+    *   non-empty collection of validation errors
+    */
   case Invalid(errors: Vector[ValidationError]) extends ValidationResult[Nothing]
 }
 
