@@ -11,8 +11,8 @@ on:
       - main
 
 permissions:
-  id-token: write
-  contents: write
+  id-token: write     # for Sigstore OIDC signing
+  contents: write     # for uploading assets/releases
 
 jobs:
   build:
@@ -21,35 +21,42 @@ jobs:
       hashes: ${{ steps.hash.outputs.hashes }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: sbt
+
       - name: Set up sbt launcher
         uses: sbt/setup-sbt@v1
+
       - name: Check format, lint, and run tests
         run: sbt check test
+
       - name: Upload dependency graph
         uses: scalacenter/sbt-dependency-submission@v3
+
       - name: Package artifact
         run: sbt clean package
+
       - name: Compute artifact digest
         id: hash
         run: |
           ARTIFACT=$(find target -type f -name "*.jar" | head -n1)
           SHA256=$(sha256sum "$ARTIFACT" | awk '{print $1}')
           BASE64=$(echo "$SHA256" | xxd -r -p | base64 -w0)
+          # outputs "<base64> <filename>"
           echo "hashes=${BASE64} ${ARTIFACT##*/}" >> "$GITHUB_OUTPUT"
 
   provenance:
     if: startsWith(github.ref, 'refs/tags/')
     needs: build
     permissions:
-      actions: read
-      id-token: write
-      contents: write
+      actions: read    # to fetch reusable workflow
+      id-token: write  # for Sigstore OIDC signing
+      contents: write  # for uploading to Releases
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
