@@ -99,7 +99,7 @@ jobs:
     needs: build
     permissions:
       actions: read      # Read workflow info
-      id-token: write     # OIDC for Sigstore
+      id-token: write    # OIDC for Sigstore
       contents: write    # Write provenance to release
     # Use the general v2 tag for the SLSA generator
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2
