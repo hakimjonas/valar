@@ -101,13 +101,12 @@ jobs:
       actions: read      # Read workflow info
       id-token: write     # OIDC for Sigstore
       contents: write    # Write provenance to release
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2
     with:
       # Use the correctly formatted hash from the build job
       base64-subjects: ${{ needs.build.outputs.hashes }}
       # Upload the generated provenance file to the release matching the tag
       upload-tag-name: ${{ github.ref_name }}
-      # upload-assets defaults to true, no need to specify unless setting to false
 
   upload-release-artifact:
     # This job ONLY runs on tag pushes due to the 'if' condition
