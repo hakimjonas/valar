@@ -1,114 +1,52 @@
-name: Scala CI + SLSA Provenance
+addCommandAlias("prepare", "fix; fmt")
 
-on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-  pull_request:
-    branches:
-      - main
+addCommandAlias("check", "+fixCheck; +fmtCheck")
 
-permissions:
-  contents: read
+addCommandAlias("fix", "scalafixAll")
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
-      artifact_name: ${{ steps.hash.outputs.artifact_name }}
-      artifact_path: ${{ steps.hash.outputs.artifact_path }}
+addCommandAlias("fixCheck", "scalafixAll --check")
 
-    steps:
-      - uses: actions/checkout@v4
+addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll")
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'sbt'
+addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
 
-      - name: Set up sbt launcher
-        uses: sbt/setup-sbt@v1
+ThisBuild / organization := "ghoula.net"
 
-      - name: Check format, lint, and run tests
-        run: sbt check test
+ThisBuild / version := "0.1.0"
 
-      - name: Upload dependency graph
-        uses: scalacenter/sbt-dependency-submission@v3
+ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 
-      - name: Package artifact
-        run: sbt clean package
+scalaVersion := "3.6.4"
 
-      - name: Compute artifact digest and prepare info for SLSA/Upload
-        id: hash
-        run: |
-          ARTIFACT_PATH=$(find target/scala-*/ -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          if [ -z "$ARTIFACT_PATH" ]; then
-            echo "Warning: Specific artifact find failed, falling back to general search."
-            ARTIFACT_PATH=$(find target -type f -name "*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          fi
-          if [ ! -f "$ARTIFACT_PATH" ]; then
-            echo "Error: Built artifact not found!"
-            exit 1
-          fi
-          ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")
-          SHA256_HEX=$(sha256sum "$ARTIFACT_PATH" | awk '{print $1}')
-          SUBJECT_LINE="sha256:$SHA256_HEX $ARTIFACT_NAME"
-          BASE64_SUBJECTS=$(echo -n "$SUBJECT_LINE" | base64 -w0)
-          echo "hashes=$BASE64_SUBJECTS" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
-          echo "artifact_path=$ARTIFACT_PATH" >> "$GITHUB_OUTPUT"
-          echo "Artifact Path: $ARTIFACT_PATH"
-          echo "Artifact Name: $ARTIFACT_NAME"
-          echo "SHA256: $SHA256_HEX"
-          echo "Base64 Subject: $BASE64_SUBJECTS"
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Xfatal-warnings",
+  "-Wunused:all",
+  "-no-indent"
+)
 
-      - name: Upload artifact for release job
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.hash.outputs.artifact_name }}
-          path: ${{ steps.hash.outputs.artifact_path }}
-          retention-days: 1
+ThisBuild / javacOptions ++= Seq(
+  "--release",
+  "17"
+)
 
-  provenance:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
-    with:
-      base64-subjects: ${{ needs.build.outputs.hashes }}
-      upload-tag-name: ${{ github.ref_name }}
+ThisBuild / semanticdbEnabled := true
 
-  upload-release-artifact:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, provenance]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+ThisBuild / semanticdbIncludeInJar := true
 
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build.outputs.artifact_name }}
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-      - name: Display structure after download
-        run: ls -R
+lazy val valar = (project in file("."))
+  .settings(
+    name := "valar",
+    libraryDependencies ++= Seq(
+      "org.specs2" %% "specs2-core" % "5.6.2" % Test,
+      "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
+    ),
+    Test / fork := true,
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+  )
 
-      - name: Upload artifact to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT_NAME: ${{ needs.build.outputs.artifact_name }}
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          echo "Uploading $ARTIFACT_NAME to release $TAG_NAME"
-          gh release upload "$TAG_NAME" "$ARTIFACT_NAME" --clobber
+ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))

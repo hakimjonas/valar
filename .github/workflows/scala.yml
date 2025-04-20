@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Print build.sbt before changes
+        run: cat build.sbt
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -40,6 +43,9 @@ jobs:
 
       - name: Package artifact
         run: sbt clean package
+
+      - name: Print build.sbt after changes
+        run: cat build.sbt
 
       - name: Compute artifact digest
         id: hash
