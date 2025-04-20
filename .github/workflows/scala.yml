@@ -11,16 +11,13 @@ on:
       - main
 
 permissions:
-  # Default read permission
   contents: read
-  # Grant id-token write permission globally for the provenance job's OIDC
   id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      # Write permission needed for dependency submission and artifact upload
       contents: write
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
@@ -54,7 +51,6 @@ jobs:
           ls -la
 
       - name: Check format, lint, and run tests
-        # This uses your project's aliases defined in build.sbt
         run: sbt check test
 
       - name: Upload dependency graph
@@ -77,7 +73,6 @@ jobs:
           fi
           ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")
           SHA256_HEX=$(sha256sum "$ARTIFACT_PATH" | awk '{print $1}')
-          # Correct format: base64 encode "sha256:<digest> <filename>"
           SUBJECT_LINE="sha256:$SHA256_HEX $ARTIFACT_NAME"
           BASE64_SUBJECTS=$(echo -n "$SUBJECT_LINE" | base64 -w0)
           echo "hashes=$BASE64_SUBJECTS" >> "$GITHUB_OUTPUT"
@@ -94,29 +89,22 @@ jobs:
           retention-days: 1
 
   provenance:
-    # This job ONLY runs on tag pushes due to the 'if' condition
     if: startsWith(github.ref, 'refs/tags/')
     needs: build
     permissions:
-      actions: read      # Read workflow info
-      id-token: write    # OIDC for Sigstore
-      contents: write    # Write provenance to release
-    # Use the general v2 tag for the SLSA generator
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
-      # Use the correctly formatted hash from the build job
       base64-subjects: ${{ needs.build.outputs.hashes }}
-      # Upload the generated provenance file to the release matching the tag
       upload-tag-name: ${{ github.ref_name }}
-      # upload-assets defaults to true in the generator, usually no need to specify
 
   upload-release-artifact:
-    # This job ONLY runs on tag pushes due to the 'if' condition
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, provenance] # Ensure build is done and release likely exists
+    needs: [build, provenance]
     runs-on: ubuntu-latest
     permissions:
-      # Write permission needed to upload artifact to release
       contents: write
 
     steps:
@@ -135,5 +123,4 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           echo "Uploading $ARTIFACT_NAME to release $TAG_NAME"
-          # Use clobber to overwrite asset if it already exists (e.g., from failed/retried run)
           gh release upload "$TAG_NAME" "$ARTIFACT_NAME" --clobber
