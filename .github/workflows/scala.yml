@@ -1,4 +1,4 @@
-name: Scala CI and Release
+name: Scala CI and GitHub Release
 
 on:
   push:
@@ -11,21 +11,19 @@ on:
       - main
 
 permissions:
-  # Default read permission sufficient for build job's needs (checkout)
-  contents: read
-  # id-token needed by crazy-max/ghaction-import-gpg for provenance?
-  # Let's grant it globally just in case, though may not be strictly needed by sbt publishSigned itself
-  id-token: write # Added in case release plugins use OIDC
+  contents: read # Default permission
+  id-token: write # Needed for GPG import action
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Need write permission for actions/upload-artifact
     permissions:
-      contents: write
+      contents: write # Needed for actions/upload-artifact
     outputs:
-      artifact_name_base: ${{ steps.set_paths.outputs.artifact_name_base }} # Base name like valar_3-0.1.0
-      scala_version_major: ${{ steps.set_paths.outputs.scala_version_major }} # Scala major version like 3
+      # Outputting specific filenames found
+      jar_filename: ${{ steps.set_paths.outputs.jar_filename }}
+      pom_filename: ${{ steps.set_paths.outputs.pom_filename }}
+      scala_version_major: ${{ steps.set_paths.outputs.scala_version_major }}
 
     steps:
       - name: Checkout repository
@@ -46,7 +44,7 @@ jobs:
 
       - name: Package artifact and generate POM
         run: |
-          sbt clean package makePom # package creates JAR, makePom creates target/.../pom.xml
+          sbt clean package makePom
 
       # Determine artifact paths and names dynamically
       - name: Set artifact paths and names
@@ -59,37 +57,33 @@ jobs:
           fi
           echo "Found Scala dir: $SCALA_VERSION_DIR"
 
-          # Use sbt-dynver to get the version for naming consistency if possible, fallback otherwise
-          PROJECT_VERSION=$(sbt -Dsbt.server.forcestart=true -batch -error 'print version') || echo "0.0.0-SNAPSHOT"
-          echo "Determined Project Version: $PROJECT_VERSION"
-
-          # Look for JAR using project name and version from dynver
-          # Note: Using simpler fallback directly as it worked, adjust if needed
-          echo "Attempting to find JAR using fallback pattern..."
+          # Find JAR file
           JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-
           if [ ! -f "$JAR_PATH" ]; then
-            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR using pattern 'valar*.jar'!"
+            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
             exit 1
           fi
           echo "Found JAR: $JAR_PATH"
+          JAR_FILENAME=$(basename "$JAR_PATH")
+          echo "JAR Filename: $JAR_FILENAME"
 
-          # Find POM file using pattern matching its generated name
-          echo "Attempting to find POM using pattern..."
-          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1) # Use find for POM
-
+          # Find POM file
+          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1)
           if [ ! -f "$POM_PATH" ]; then
-            echo "Error: POM file not found in $SCALA_VERSION_DIR using pattern 'valar*.pom'! Did 'sbt makePom' run and output logs show it being written?"
+            echo "Error: POM file not found in $SCALA_VERSION_DIR!"
             exit 1
           fi
           echo "Found POM: $POM_PATH"
+          POM_FILENAME=$(basename "$POM_PATH")
+          echo "POM Filename: $POM_FILENAME"
 
-          # Extract base name (e.g., valar_3-0.1.1) and Scala major version for artifact naming
-          ARTIFACT_FILENAME=$(basename "$JAR_PATH" .jar)
-          SCALA_MAJOR_VERSION=$(basename "$SCALA_VERSION_DIR" | sed 's/scala-//') # e.g., 3.6.4
-          SCALA_MAJOR_VERSION=${SCALA_MAJOR_VERSION%%.*} # Extract major version '3'
+          # Get Scala major version
+          SCALA_MAJOR_VERSION=$(basename "$SCALA_VERSION_DIR" | sed 's/scala-//')
+          SCALA_MAJOR_VERSION=${SCALA_MAJOR_VERSION%%.*}
 
-          echo "artifact_name_base=$ARTIFACT_FILENAME" >> "$GITHUB_OUTPUT"
+          # Set outputs
+          echo "jar_filename=$JAR_FILENAME" >> "$GITHUB_OUTPUT"
+          echo "pom_filename=$POM_FILENAME" >> "$GITHUB_OUTPUT"
           echo "scala_version_major=$SCALA_MAJOR_VERSION" >> "$GITHUB_OUTPUT"
 
           # Prepare staging directory for upload
@@ -102,8 +96,9 @@ jobs:
       - name: Upload Jar and POM for publish job
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ steps.set_paths.outputs.scala_version_major }} # Include Scala version in artifact name
-          path: staging/ # Upload the contents of the staging directory
+          # Name the artifact bundle clearly
+          name: build-artifacts-scala-${{ steps.set_paths.outputs.scala_version_major }}
+          path: staging/
           retention-days: 1
 
   publish:
@@ -112,59 +107,77 @@ jobs:
     needs: build # Wait for build job to complete
     runs-on: ubuntu-latest
     permissions:
-      # Read contents for checkout
-      contents: read
-      # id-token needed by crazy-max/ghaction-import-gpg potentially
+      # Need write access to contents to create releases and upload assets
+      contents: write
+      # Still need id-token for GPG action
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (needed for gh cli context)
         uses: actions/checkout@v4
-        with:
-          # Fetch all history for sbt-dynver to determine version correctly
-          fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (might not be needed, but harmless)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'sbt'
 
-      - name: Set up sbt launcher
-        uses: sbt/setup-sbt@v1
-
       - name: Import GPG key
-        id: import_gpg # Give step an ID
+        id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
-      # This step ensures the PGP key ID is available if needed by sbt-pgp explicitly
-      # Although often sbt-pgp finds it automatically after import
       - name: Check GPG Key ID
         run: |
           echo "GPG Key ID found: ${{ steps.import_gpg.outputs.keyid }}"
-      
 
-      # Download step remains commented out - publishSigned will rebuild/repackage
-      # - name: Download Jar and POM from build job
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: build-artifacts-${{ needs.build.outputs.scala_version_major }}
-      #     path: target/scala-${{ needs.build.outputs.scala_version_major }}/ # Adjust path if needed
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # Match the upload name from build job
+          name: build-artifacts-scala-${{ needs.build.outputs.scala_version_major }}
+          # Download to a specific directory
+          path: ./release-assets
 
-      - name: Publish to Sonatype OSSRH
+      - name: Sign downloaded artifacts
+        run: |
+          echo "Signing artifacts in ./release-assets"
+          cd ./release-assets
+          ls -l
+          # Use the specific filenames output by the build job
+          JAR_FILE="${{ needs.build.outputs.jar_filename }}"
+          POM_FILE="${{ needs.build.outputs.pom_filename }}"
+          echo "Signing $JAR_FILE..."
+          gpg --batch --yes --detach-sign --armor "$JAR_FILE"
+          echo "Signing $POM_FILE..."
+          gpg --batch --yes --detach-sign --armor "$POM_FILE"
+          echo "Contents after signing:"
+          ls -l
         env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        # 'publishSigned' triggers GPG signing via sbt-pgp and uploads
-        # Assumes build.sbt is configured with 'publishTo' and sbt-pgp/sbt-sonatype
-        # Assumes sbt-dynver provides the correct version from the tag
-        run: sbt publishSigned
+        # Pass passphrase directly to GPG if needed (should use agent from import_gpg ideally)
+        # GPG_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Usually not needed as import action sets up agent
 
-      # Optional: Create GitHub Release steps remain commented out
-      # - name: Create GitHub Release ...
-      # - name: Upload assets to GitHub Release ...
+      - name: Create GitHub Release and Upload Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # gh needs this implicitly
+          TAG_NAME: ${{ github.ref_name }}
+          JAR_FILE: ${{ needs.build.outputs.jar_filename }}
+          POM_FILE: ${{ needs.build.outputs.pom_filename }}
+        run: |
+          echo "Creating release for tag $TAG_NAME"
+          gh release create "$TAG_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Release $TAG_NAME" \
+            --generate-notes
+
+          echo "Uploading assets..."
+          cd ./release-assets
+          gh release upload "$TAG_NAME" \
+            "$JAR_FILE" \
+            "$JAR_FILE.asc" \
+            "$POM_FILE" \
+            "$POM_FILE.asc" \
+            --clobber # Overwrite assets if release/tag already exists
