@@ -1,33 +1,131 @@
+# Workflow name
 name: Scala CI and GitHub Release
 
+# Trigger conditions
 on:
   push:
     branches:
-      - main
+      - main # Run on pushes to main
     tags:
-      - 'v*' # Trigger publish job on version tags
+      - 'v*' # Run on pushes to version tags (e.g., v0.2.0)
   pull_request:
     branches:
-      - main
+      - main # Run on pull requests targeting main
 
+# Default permissions for the workflow token
 permissions:
-  contents: read # Default permission
-  id-token: write # Needed for GPG import action
+  contents: read # Read access to checkout code
+  id-token: write # Needed for GPG key import action
 
 jobs:
+  # Build job: compile, test, check format, check docs, package artifacts
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed for actions/upload-artifact
     outputs:
-      # Outputting specific filenames found
+      # Output artifact names for the publish job
+      # Note: Removed scala_version_major as it's less critical now
       jar_filename: ${{ steps.set_paths.outputs.jar_filename }}
       pom_filename: ${{ steps.set_paths.outputs.pom_filename }}
-      scala_version_major: ${{ steps.set_paths.outputs.scala_version_major }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for dynver/release notes if needed
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt' # Cache sbt dependencies
+
+      - name: Set up sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Check format, lint, and run tests
+        # Runs aliases defined in build.sbt (check = +fixCheck; +fmtCheck) and tests
+        run: sbt check test
+
+      # --- ADDED: Check documentation compilation ---
+      - name: Check documentation (mdoc)
+        # Verifies that code snippets in docs compile
+        run: sbt mdoc --check
+
+      - name: Package artifact and generate POM
+        # Creates the JAR and POM files needed for publishing
+        run: |
+          sbt clean package makePom
+
+      - name: Set artifact paths and names
+        # Dynamically find the generated JAR and POM to handle different Scala versions
+        id: set_paths
+        run: |
+          SCALA_VERSION_DIR=$(find target -maxdepth 1 -type d -name "scala-*" | head -n1)
+          if [ -z "$SCALA_VERSION_DIR" ]; then
+            echo "Error: Scala version directory not found in target!"
+            exit 1
+          fi
+          echo "Found Scala dir: $SCALA_VERSION_DIR"
+
+          # Find main JAR file (excluding sources/javadoc)
+          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
+          if [ ! -f "$JAR_PATH" ]; then
+            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
+            exit 1
+          fi
+          JAR_FILENAME=$(basename "$JAR_PATH")
+          echo "JAR Filename: $JAR_FILENAME"
+
+          # Find POM file
+          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1)
+          if [ ! -f "$POM_PATH" ]; then
+            echo "Error: POM file not found in $SCALA_VERSION_DIR!"
+            exit 1
+          fi
+          POM_FILENAME=$(basename "$POM_PATH")
+          echo "POM Filename: $POM_FILENAME"
+
+          # Set outputs for use in other jobs/steps
+          echo "jar_filename=$JAR_FILENAME" >> "$GITHUB_OUTPUT"
+          echo "pom_filename=$POM_FILENAME" >> "$GITHUB_OUTPUT"
+
+          # Prepare staging directory for artifact upload
+          mkdir -p staging
+          cp "$JAR_PATH" staging/
+          cp "$POM_PATH" staging/
+          # Also copy sources and javadoc jars if they exist (required by Sonatype)
+          SOURCES_JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*-sources.jar" | head -n1)
+          if [ -f "$SOURCES_JAR_PATH" ]; then cp "$SOURCES_JAR_PATH" staging/; fi
+          JAVADOC_JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*-javadoc.jar" | head -n1)
+          if [ -f "$JAVADOC_JAR_PATH" ]; then cp "$JAVADOC_JAR_PATH" staging/; fi
+          echo "Contents of staging:"
+          ls -l staging
+
+      - name: Upload artifacts for publish job
+        # Uploads JAR, POM, sources JAR, javadoc JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts # Simplified name
+          path: staging/
+          retention-days: 1 # Keep artifacts for 1 day
+
+  # Publish job: Runs only on tag pushes, publishes to Sonatype, creates GitHub release
+  publish:
+    if: startsWith(github.ref, 'refs/tags/') # Only run on tags like v0.2.0
+    needs: build # Depends on the build job succeeding
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for sbt-ci-release to create GitHub release
+      id-token: write # Needed for GPG key import action
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for dynver/release notes
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -39,94 +137,6 @@ jobs:
       - name: Set up sbt launcher
         uses: sbt/setup-sbt@v1
 
-      - name: Check format, lint, and run tests
-        run: sbt check test
-
-      - name: Package artifact and generate POM
-        run: |
-          sbt clean package makePom
-
-      # Determine artifact paths and names dynamically
-      - name: Set artifact paths and names
-        id: set_paths
-        run: |
-          SCALA_VERSION_DIR=$(find target -maxdepth 1 -type d -name "scala-*" | head -n1)
-          if [ -z "$SCALA_VERSION_DIR" ]; then
-            echo "Error: Scala version directory not found in target!"
-            exit 1
-          fi
-          echo "Found Scala dir: $SCALA_VERSION_DIR"
-
-          # Find JAR file
-          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
-          if [ ! -f "$JAR_PATH" ]; then
-            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
-            exit 1
-          fi
-          echo "Found JAR: $JAR_PATH"
-          JAR_FILENAME=$(basename "$JAR_PATH")
-          echo "JAR Filename: $JAR_FILENAME"
-
-          # Find POM file
-          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1)
-          if [ ! -f "$POM_PATH" ]; then
-            echo "Error: POM file not found in $SCALA_VERSION_DIR!"
-            exit 1
-          fi
-          echo "Found POM: $POM_PATH"
-          POM_FILENAME=$(basename "$POM_PATH")
-          echo "POM Filename: $POM_FILENAME"
-
-          # Get Scala major version
-          SCALA_MAJOR_VERSION=$(basename "$SCALA_VERSION_DIR" | sed 's/scala-//')
-          SCALA_MAJOR_VERSION=${SCALA_MAJOR_VERSION%%.*}
-
-          # Set outputs
-          echo "jar_filename=$JAR_FILENAME" >> "$GITHUB_OUTPUT"
-          echo "pom_filename=$POM_FILENAME" >> "$GITHUB_OUTPUT"
-          echo "scala_version_major=$SCALA_MAJOR_VERSION" >> "$GITHUB_OUTPUT"
-
-          # Prepare staging directory for upload
-          mkdir -p staging
-          cp "$JAR_PATH" staging/
-          cp "$POM_PATH" staging/
-          echo "Contents of staging:"
-          ls -l staging
-
-      - name: Upload Jar and POM for publish job
-        uses: actions/upload-artifact@v4
-        with:
-          # Name the artifact bundle clearly
-          name: build-artifacts-scala-${{ steps.set_paths.outputs.scala_version_major }}
-          path: staging/
-          retention-days: 1
-
-  publish:
-    # Run only when a 'v*' tag is pushed
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build # Wait for build job to complete
-    runs-on: ubuntu-latest
-    permissions:
-      # Need write access to contents to create releases and upload assets
-      contents: write
-      # Still need id-token for GPG action
-      id-token: write
-
-    steps:
-      - name: Checkout repository (needed for gh cli context)
-        uses: actions/checkout@v4
-        # fetch-depth needed if GPG signing/release notes depend on history
-        # Keep fetch-depth: 0 for dynver compatibility if re-enabled later
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 17 (might not be needed, but harmless)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'sbt' # Cache might speed up if sbt is used, otherwise remove
-
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6
@@ -134,56 +144,23 @@ jobs:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
-      - name: Check GPG Key ID
-        run: |
-          echo "GPG Key ID found: ${{ steps.import_gpg.outputs.keyid }}"
+      # --- REMOVED: Download/Sign/Release steps are now handled by sbt ci-release ---
+      # - name: Download build artifacts ...
+      # - name: Sign downloaded artifacts ...
+      # - name: Create GitHub Release and Upload Assets ...
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          # Match the upload name from build job
-          name: build-artifacts-scala-${{ needs.build.outputs.scala_version_major }}
-          # Download to a specific directory
-          path: ./release-assets
-
-      - name: Sign downloaded artifacts
-        run: |
-          echo "Signing artifacts in ./release-assets"
-          cd ./release-assets
-          ls -l
-          # Use the specific filenames output by the build job
-          JAR_FILE="${{ needs.build.outputs.jar_filename }}"
-          POM_FILE="${{ needs.build.outputs.pom_filename }}"
-          echo "Signing $JAR_FILE..."
-          gpg --batch --yes --detach-sign --armor "$JAR_FILE"
-          echo "Signing $POM_FILE..."
-          gpg --batch --yes --detach-sign --armor "$POM_FILE"
-          echo "Contents after signing:"
-          ls -l
-
-      - name: Create GitHub Release and Upload Assets
+      # --- ADDED: Publish to Sonatype and create GitHub Release ---
+      - name: Publish release
+        # This command uses sbt-ci-release plugin
+        # It typically handles:
+        # - PGP signing (using sbt-pgp settings, finds key via GPG agent)
+        # - Publishing artifacts (JAR, sources, javadoc, POM, signatures) to Sonatype OSSRH
+        # - Closing and releasing the staging repository on Sonatype
+        # - Creating a GitHub Release for the tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # gh needs this implicitly
-          TAG_NAME: ${{ github.ref_name }}
-          JAR_FILE: ${{ needs.build.outputs.jar_filename }}
-          POM_FILE: ${{ needs.build.outputs.pom_filename }}
-        run: |
-          echo "Creating release for tag $TAG_NAME"
-          gh release create "$TAG_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Release $TAG_NAME" \
-            --generate-notes
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Passphrase for GPG key
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # Sonatype password/token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token for creating GitHub release
+        run: sbt ci-release
 
-          echo "Uploading assets..."
-          cd ./release-assets
-          # Define files to upload
-          FILES_TO_UPLOAD=("$JAR_FILE" "$JAR_FILE.asc" "$POM_FILE" "$POM_FILE.asc")
-          # Check if files exist before uploading
-          for FILE in "${FILES_TO_UPLOAD[@]}"; do
-            if [ ! -f "$FILE" ]; then
-              echo "Error: Asset file not found - $FILE"
-              exit 1
-            fi
-          done
-          # Upload all specified files
-          gh release upload "$TAG_NAME" "${FILES_TO_UPLOAD[@]}" --clobber

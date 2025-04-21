@@ -53,7 +53,7 @@ ThisBuild / scmInfo := Some(
   )
 )
 
-// Ensure sources and Javadoc JARs are published (Required by Sonatype/Maven Central)
+// Ensure sources and Javadoc JARs are published (Required by Sonatype/Maven Central)w
 // These settings configure the packageSrc and packageDoc tasks to be included
 // when publishing.
 ThisBuild / publishArtifact := true
@@ -63,6 +63,7 @@ ThisBuild / Compile / packageSrc / publishArtifact := true // Enable publishing 
 // ===== Project Definition =====
 
 lazy val valar = (project in file("."))
+  .enablePlugins(MdocPlugin) // Enable the plugin for this project
   .settings(
     name := "valar", // Project name
     // libraryDependencies only contains test dependencies, which is fine
@@ -71,8 +72,16 @@ lazy val valar = (project in file("."))
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
     Test / fork := true,
-    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
-    // scalaVersion is inherited from ThisBuild
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+    // mdoc settings
+    mdocIn := file("docs-src"),
+    mdocOut := file("docs"),
+    mdocExtraArguments := Seq(
+      "--out",
+      (ThisBuild / baseDirectory).value.toString,
+      "--include",
+      "README.md"
+    )
   )
 
 // ===== Command Aliases =====
