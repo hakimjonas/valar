@@ -361,15 +361,14 @@ object ValidationSpec extends Specification with Matchers with TraversableMatche
 
   "Union Validation" should {
     "validate when value matches the first type (String)" in {
-      Validation.validateUnion[String, Int]("hello").must(beEqualTo(Valid("hello")))
+      validateUnion[String, Int]("hello").must(beEqualTo(Valid("hello")))
     }
     "validate when value matches the second type (Int)" in {
-      Validation.validateUnion[String, Int](42).must(beEqualTo(Valid(42)))
+      validateUnion[String, Int](42).must(beEqualTo(Valid(42)))
     }
     "fail with a nested error when value matches neither type" in {
       val inputValue: Any = true
-      Validation
-        .validateUnion[String, Int](inputValue)
+      validateUnion[String, Int](inputValue)
         .must(beLike { case Invalid(errors) =>
           errors must haveSize(1)
           val topError = errors.head
