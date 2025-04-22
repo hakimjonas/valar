@@ -4,7 +4,7 @@
 
 ThisBuild / organization := "ghoula.net"
 
-ThisBuild / scalaVersion := "3.6.4" // Define Scala version for ThisBuild
+ThisBuild / scalaVersion := "3.6.4"
 
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 
@@ -30,22 +30,20 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 // ===== Publishing Settings =====
 
-// Define publishing destination using sbt-sonatype helper
-// This automatically points to the correct Sonatype staging repo for releases
-// or the snapshots repo if the version ends in "-SNAPSHOT"
+// This is the Sonatype repository for publishing artifacts
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 // Developer information (Required by Sonatype/Maven Central)
 ThisBuild / developers := List(
   Developer(
-    id = "hakimjonas", // Your GitHub ID or unique identifier
-    name = "Hakim Jonas Ghoula", // Your Name
-    email = "hakim@walkthisway.dk", // Your Email
-    url = url("https://github.com/hakimjonas") // Optional URL
+    id = "hakimjonas",
+    name = "Hakim Jonas Ghoula",
+    email = "hakim@walkthisway.dk",
+    url = url("https://github.com/hakimjonas")
   )
 )
 
-// SCM (Source Control Management) information (Required by Sonatype/Maven Central)
+// Project information (Required by Sonatype/Maven Central)
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/hakimjonas/valar"),
@@ -53,27 +51,27 @@ ThisBuild / scmInfo := Some(
   )
 )
 
-// Ensure sources and Javadoc JARs are published (Required by Sonatype/Maven Central)w
-// These settings configure the packageSrc and packageDoc tasks to be included
-// when publishing.
+// License information (Required by Sonatype/Maven Central)
+ThisBuild / licenses := Seq(
+  "MIT" -> url("http://opensource.org/licenses/MIT")
+)
+
 ThisBuild / publishArtifact := true
-ThisBuild / Compile / packageDoc / publishArtifact := true // Enable publishing of Javadoc JAR
-ThisBuild / Compile / packageSrc / publishArtifact := true // Enable publishing of sources JAR
+ThisBuild / Compile / packageDoc / publishArtifact := true
+ThisBuild / Compile / packageSrc / publishArtifact := true
 
 // ===== Project Definition =====
 
 lazy val valar = (project in file("."))
-  .enablePlugins(MdocPlugin) // Enable the plugin for this project
+  .enablePlugins(MdocPlugin)
   .settings(
-    name := "valar", // Project name
-    // libraryDependencies only contains test dependencies, which is fine
+    name := "valar",
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "5.6.2" % Test,
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
     Test / fork := true,
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    // mdoc settings
     mdocIn := file("docs-src"),
     mdocOut := file("docs"),
     mdocExtraArguments := Seq(
@@ -83,8 +81,6 @@ lazy val valar = (project in file("."))
       "README.md"
     )
   )
-
-// ===== Command Aliases =====
 
 addCommandAlias("prepare", "fix; fmt")
 addCommandAlias("check", "+fixCheck; +fmtCheck")

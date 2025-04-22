@@ -1,18 +1,24 @@
-
 # Valar – Type-Safe Validation for Scala 3
 
-Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured, detailed error messages useful for debugging or user feedback.
+Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
+metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
+detailed error messages useful for debugging or user feedback.
 
 ## Key Features:
 
-* **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using `ValidationResult[A]`. Eliminate runtime errors caused by unexpected validation states.
-* **Minimal Boilerplate with Derivation:** Derive `Validator` instances automatically for case classes using compile-time macros. Focus on your rules, not the wiring. (*Note: Derivation requires validators for all field types.*)
+* **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using
+  `ValidationResult[A]`. Eliminate runtime errors caused by unexpected validation states.
+* **Minimal Boilerplate:** Derive `Validator` instances automatically for case classes using compile-time macros,
+  significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
 * **Flexible Error Handling:** Choose the strategy that fits your use case:
-    * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in UIs or API responses).
-    * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
-* **Actionable Error Reports:** Generate detailed `ValidationError` objects containing precise field paths, validation rule specifics (like expected vs. actual values), and optional codes/severity, making debugging and error reporting straightforward.
-* **Scala 3 Idiomatic:** Built specifically for Scala 3, embracing features like extension methods, given instances, opaque types, and macros for a modern, expressive API.
-* **Built-in Support:** Includes validators for standard Scala primitives and common JDK types like `UUID` and `java.time.*` to streamline setup and derivation (see "Built-in Validators" below).
+  * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in
+    UIs or API responses).
+  * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
+* **Actionable Error Reports:** Generate detailed `ValidationError` objects containing precise field paths, validation
+  rule specifics (like expected vs. actual values), and optional codes/severity, making debugging and error reporting
+  straightforward.
+* **Scala 3 Idiomatic:** Built specifically for Scala 3, embracing features like extension methods, given instances,
+  opaque types, and macros for a modern, expressive API.
 
 ## Installation
 
@@ -29,43 +35,55 @@ Here's a basic example illustrating how to use Valar for validating a simple cas
 *Note: Valar provides default validators for `String` (non-empty) and `Int` (non-negative). This example explicitly defines `given` instances to demonstrate how you can define custom logic or override the defaults.*
 
 ```scala mdoc
-import net.ghoula.valar.{Validator, ValidationResult}
-import net.ghoula.valar.ValidationResult.{Valid, Invalid}
+import net.ghoula.valar.{ValidationResult, Validator}
+import net.ghoula.valar.ValidationResult.{Invalid, Valid}
 import net.ghoula.valar.ValidationErrors.ValidationError
-// Import built-in validators (including String, Int, Option) and derivation helper
-import net.ghoula.valar.Validator.given
+import net.ghoula.valar.ValidationHelpers.*
 import net.ghoula.valar.Validator.deriveValidatorMacro
 
+/**
+ * This code demonstrates how to use the Valar library for validation in Scala.
+ * It includes a custom validator for a case class `User` with the defined fields `name` and `age`.
+ * The code also shows how to validate an instance of `User` and handle the validation result.
+ *
+ * Key components:
+ * - The `Validator` trait is used to define custom validation logic for different types.
+ * - The `ValidationResult` class represents the outcome of the validation process.
+ * - The `deriveValidatorMacro` automatically derives a validator for the `User` case class.
+ * - The `ValidationHelpers` object provides helper functions for common validation tasks.
+ * - The `ValidationErrors` object defines error messages and codes for validation failures.
+ */
 case class User(name: String, age: Option[Int])
 
-// Validator derivation now uses the built-in validators for String, Int, and Option[Int]
-// Use an explicit name for the derived validator
-given userValidator: Validator[User] = deriveValidatorMacro
-
-// Example with invalid data according to built-in rules
-val userInvalid = User("", Some(-10))
-val resultInvalid = Validator[User].validate(userInvalid) // Uses implicit userValidator
-
-resultInvalid match {
-  case Valid(validUser) => println(s"Valid user: $validUser") // Should not happen
-  case Invalid(errors) => {
-    println("Validation Failed for invalid User:")
-    // Output will reflect errors from built-in nonEmptyStringValidator and positiveIntValidator
-    println(errors.map(_.prettyPrint(indent = 2)).mkString("\n"))
-  }
+// Define a validator for String using the Validator for String
+given Validator[String] with {
+  def validate(value: String): ValidationResult[String] =
+    nonEmpty(value, _ => "Name must not be empty")
 }
 
-// Example with valid data according to built-in rules
-val userValid = User("Alice", Some(30))
-val resultValid = Validator[User].validate(userValid)
-
-resultValid match {
-  case Valid(validUser) => println(s"\nValid user: $validUser")
-  case Invalid(errors) => {
-    println("Validation Failed for valid User (UNEXPECTED):") // Should not happen
-    println(errors.map(_.prettyPrint(indent = 2)).mkString("\n"))
-  }
+// Define a validator for Option[Int] using the Validator for Int
+given Validator[Int] with {
+  def validate(value: Int): ValidationResult[Int] =
+    positiveInt(value, i => s"Age must be non-negative, got $i")
 }
+
+// Automatically derive Validator for User using givens above
+given Validator[User] = deriveValidatorMacro
+
+// Create an instance of User with invalid age
+val user = User("", Some(-10))
+
+// Validate the user instance
+val result: ValidationResult[User] = Validator[User].validate(user)
+
+// Handle the validation result
+result match {
+  case Valid(validUser) => println(s"Valid user: $validUser")
+  case Invalid(errors) =>
+    println("Validation Failed:")
+    println(errors.map(_.prettyPrint(indent = 2)).mkString("\n"))
+}
+
 ```
 
 ## Defining Custom Validators
@@ -74,49 +92,81 @@ Valar allows you to define custom validators easily by implementing the `Validat
 
 ```scala mdoc
 import net.ghoula.valar.*
+import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
 import net.ghoula.valar.ValidationHelpers.*
+import net.ghoula.valar.ValidationResult.{Invalid, Valid}
+import scala.util.Either
 
-// Example: Opaque type for Age validated to be non-negative
-opaque type Age = Int
+// Create a module to encapsulate an opaque type with validation
+object MyAgeModule {
 
-object Age {
+  // Define an opaque type to enforce validation at compile time
+  opaque type Age = Int
 
-  // Define the validation rule using a helper
-  private def checkAge(value: Int): ValidationResult[Int] =
-    positiveInt(value, i => s"Age must be non-negative, got $i")
+  object Age {
+    /**
+     * Validates an age value returning Either for integration with other APIs
+     *
+     * @param value The integer to validate as an age
+     * @return Either a valid Age or ValidationError
+     */
+    def validateEither(value: Int): Either[ValidationError, Age] = {
+      Either.cond(
+        0 <= value && value <= 130,
+        value: Age,
+        ValidationError("❌ Must be between 0 and 130.")
+      )
+    }
 
-  // Public smart constructor returning ValidationResult[Age]
-  def apply(value: Int): ValidationResult[Age] =
-    // If checkAge is Valid(int), map lifts the Int to Age (safe inside companion)
-    checkAge(value).map(validatedInt => validatedInt)
+    /**
+     * Primary constructor that performs validation and returns ValidationResult
+     *
+     * @param value The integer to validate as an age
+     * @return ValidationResult containing either valid Age or validation errors
+     */
+    def apply(value: Int): ValidationResult[Age] = {
+      validateEither(value) match {
+        case Right(age) => Valid(age)
+        case Left(err)  => Invalid(Vector(err))
+      }
+    }
 
-  // Validator instance for the opaque type
-  // Use explicit name for the given instance
-  given ageValidator: Validator[Age] with {
-    def validate(value: Age): ValidationResult[Age] =
-      // Re-validate the underlying Int. If Valid(_), map preserves the original Age type.
-      checkAge(value).map(_ => value)
+    /**
+     * Unwraps the opaque type to access the underlying Int
+     *
+     * @param a The Age instance to unwrap
+     * @return The underlying Int value
+     */
+    def unwrap(a: Age): Int = a
+
+    // Define a Validator instance for Age to integrate with Valar's validation system
+    given ageValidator: Validator[Age] with {
+      def validate(value: Age): ValidationResult[Age] = Age.apply(value)
+    }
   }
-
-  // Optional: Users might add extensions to safely expose the value if needed
-  // extension (age: Age) def value: Int = age
 }
 
-// --- Usage Example ---
+// Usage example showing how to work with the validated type
+import MyAgeModule.Age
 
-val validAgeResult: ValidationResult[Age] = Age(25) // Use smart constructor
-val invalidAgeResult: ValidationResult[Age] = Age(-3)
+println("--- Testing Validated Age Type ---")
 
-println(s"Creating Age(25): $validAgeResult")
-// Expected: Creating Age(25): Valid(25)
+// Validate using Either-based API
+val validAgeResult = Age.validateEither(25)
+val invalidAgeResult = Age.validateEither(-3)
 
-println(s"Creating Age(-3): $invalidAgeResult")
-// Expected: Creating Age(-3): Invalid(Vector(InternalValidationError(Age must be non-negative, got -3,...)))
+// Handle validation results
+validAgeResult match {
+  case Right(age) => println(s"Valid age: $age")
+  case Left(e)    => println(s"Invalid creation: ${e.prettyPrint()}")
+}
 
-// Example using the validator on an existing valid Age instance
-validAgeResult.toOption.foreach { age => // <--- CORRECTED: Added .toOption
-  val validationResult = Validator[Age].validate(age)
-  println(s"Validating existing Age $age: $validationResult")}
+invalidAgeResult match {
+  case Right(age) => println(s"Valid age: $age")
+  case Left(e)    => println(s"Invalid creation: ${e.prettyPrint()}")
+}
+
+println("----------------------------")
 ```
 
 ## Core Components
@@ -126,6 +176,8 @@ validAgeResult.toOption.foreach { age => // <--- CORRECTED: Added .toOption
 Represents the outcome of validation as either `Valid(value)` or `Invalid(errors)`:
 
 ```scala
+import net.ghoula.valar.ValidationErrors.ValidationError
+
 enum ValidationResult[+A] {
   case Valid(value: A)
   case Invalid(errors: Vector[ValidationError])
@@ -148,6 +200,8 @@ Opaque type providing rich context for validation errors, including:
 A typeclass defining validation logic for a given type:
 
 ```scala
+import net.ghoula.valar.ValidationResult
+
 trait Validator[A] {
   def validate(a: A): ValidationResult[A]
 }
@@ -156,6 +210,8 @@ trait Validator[A] {
 Validators can be automatically derived for case classes using `deriveValidatorMacro`:
 
 ```scala mdoc
+import net.ghoula.valar.Validator
+import net.ghoula.valar.Validator.deriveValidatorMacro
 
 case class Config(host: String, port: Int)
 
@@ -173,11 +229,22 @@ Common validations like non-empty strings, numeric ranges, regex patterns, and m
 ```scala
 import net.ghoula.valar.ValidationHelpers.*
 
-nonEmpty("value")
-positiveInt(5)
-inRange(3, 1, 10)() // Validates 3 is in [1, 10]
-regexMatch("abc123", "[a-z]+[0-9]+")()
-required(Some("value")) // Validates Option is Some
+/**
+ * Helper methods for common validations demonstrate both usage and results
+ */
+
+// String validation - ensures string is not empty
+nonEmpty("value") // Returns Valid("value")
+
+// Numeric validations
+positiveInt(5) // Validates integer is positive
+inRange(3, 1, 10)() // Validates value is within inclusive range [1, 10]
+
+// Pattern matching validation
+regexMatch("abc123", "[a-z]+[0-9]+")() // Validates string matches the pattern
+
+// Option handling
+required(Some("value")) // Ensures Option contains a value
 optional(Option.empty[String]) // Validates inner value if Some, passes if None
 ```
 
