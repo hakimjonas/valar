@@ -25,7 +25,6 @@ jobs:
       contents: write # Needed for actions/upload-artifact
     outputs:
       # Output artifact names for the publish job
-      # Note: Removed scala_version_major as it's less critical now
       jar_filename: ${{ steps.set_paths.outputs.jar_filename }}
       pom_filename: ${{ steps.set_paths.outputs.pom_filename }}
 
@@ -49,10 +48,11 @@ jobs:
         # Runs aliases defined in build.sbt (check = +fixCheck; +fmtCheck) and tests
         run: sbt check test
 
-      # --- ADDED: Check documentation compilation ---
+      # --- Check documentation compilation ---
       - name: Check documentation (mdoc)
         # Verifies that code snippets in docs compile
-        run: sbt mdoc --check
+        # Pass arguments to the mdoc task within quotes for sbt
+        run: sbt "mdoc --check" # <-- MODIFIED THIS LINE
 
       - name: Package artifact and generate POM
         # Creates the JAR and POM files needed for publishing
@@ -143,11 +143,6 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
-
-      # --- REMOVED: Download/Sign/Release steps are now handled by sbt ci-release ---
-      # - name: Download build artifacts ...
-      # - name: Sign downloaded artifacts ...
-      # - name: Create GitHub Release and Upload Assets ...
 
       # --- ADDED: Publish to Sonatype and create GitHub Release ---
       - name: Publish release

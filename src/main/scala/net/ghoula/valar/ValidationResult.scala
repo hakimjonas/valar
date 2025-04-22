@@ -53,13 +53,13 @@ object ValidationResult {
     Invalid(errors)
   }
 
-  /** Converts an [[ Either [ValidationError, A] ]] to a [[ValidationResult]]. */
+  /** Converts an [[Either[ValidationError, A]]] to a [[ValidationResult]]. */
   def fromEither[A](either: Either[ValidationError, A]): ValidationResult[A] = either match {
     case Right(a) => valid(a)
     case Left(e) => invalid(e)
   }
 
-  /** Converts an [[ Either[Vector[ValidationError], A] ]] into a [[ValidationResult]]. */
+  /** Converts an [[Either[Vector[ValidationError], A]]] into a [[ValidationResult]]. */
   def fromEitherErrors[A](either: Either[Vector[ValidationError], A]): ValidationResult[A] =
     either match {
       case Right(a) =>
@@ -137,7 +137,7 @@ object ValidationResult {
       case Invalid(errs) => Invalid(errs)
     }
 
-    /** Combines two results, accumulating errors via [[ErrorAccumulator]]. */
+    /** Combines two results, accumulating errors via `ErrorAccumulator`. */
     def zip[B](
       that: => ValidationResult[B]
     )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[(A, B)] = (vr, that) match {
@@ -182,7 +182,7 @@ object ValidationResult {
       case Invalid(errs) => ifInvalid(errs)
     }
 
-    /** Converts to `Try`, wrapping the first error in [[ValidationException]]. */
+    /** Converts to `Try`, wrapping the first error in a `ValidationException`. */
     def toTry: Try[A] = vr match {
       case Valid(a) => Success(a)
       case Invalid(errs) => Failure(new ValidationException(errs.head))

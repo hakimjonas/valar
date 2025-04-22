@@ -44,42 +44,41 @@ object ValidatorSpec extends Specification with Matchers with TraversableMatcher
     }
 
     "validate Option[Int]" in {
-      // Summon the validator for Option[Int]. This implicitly uses:
-      // 1. The `given optionValidator[A]` (with A=Int) we just added.
-      // 2. The `given positiveIntValidator: Validator[Int]` for the inner type.
       val validator = summon[Validator[Option[Int]]]
       validator must beAnInstanceOf[Validator[Option[Int]]]
 
-      // Scenario 1: Some(Valid Value) -> Should be Valid(Some(Value))
       validator.validate(Some(42)) must beEqualTo(ValidationResult.Valid(Some(42)))
-      validator.validate(Some(0)) must beEqualTo(ValidationResult.Valid(Some(0))) // Boundary case for Int
+      validator.validate(Some(0)) must beEqualTo(ValidationResult.Valid(Some(0)))
 
-      // Scenario 2: None -> Should be Valid(None)
       validator.validate(None) must beEqualTo(ValidationResult.Valid(None))
 
-      // Scenario 3: Some(Invalid Value) -> Should be Invalid
       val invalidInput = Some(-5)
       val result = validator.validate(invalidInput)
       result must beAnInstanceOf[ValidationResult.Invalid]
 
-      // Optional: Check that the error comes from the inner Int validator
       result.fold(
-        _ => failure("Expected Invalid, got Valid"), // Should not happen based on above check
+        _ => failure("Expected Invalid, got Valid"),
         errors => {
-          errors must haveSize(1) // Expecting one error from the Int validator
-          errors.head.message must contain("Int must be non-negative") // Check error message content
+          errors must haveSize(1)
+          errors.head.message must contain("Int must be non-negative")
         }
       )
     }
 
     "validate Boolean (pass-through)" in { checkValidator(true) and checkValidator(false) }
+
     "validate Byte (pass-through)" in { checkValidator(1.toByte) }
+
     "validate Short (pass-through)" in { checkValidator(1.toShort) }
+
     "validate Long (pass-through)" in { checkValidator(1L) }
+
     "validate Char (pass-through)" in { checkValidator('a') }
+
     "validate Unit (pass-through)" in { checkValidator(()) }
 
     "validate BigInt (pass-through)" in { checkValidator(BigInt(123)) }
+
     "validate BigDecimal (pass-through)" in { checkValidator(BigDecimal(123.45)) }
 
     "validate Symbol (pass-through)" in { checkValidator(Symbol("abc")) }

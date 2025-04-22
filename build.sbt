@@ -1,15 +1,30 @@
-// build.sbt
-
 // ===== Build-wide Settings =====
-
 ThisBuild / organization := "ghoula.net"
-
-ThisBuild / scalaVersion := "3.6.4" // Define Scala version for ThisBuild
-
+ThisBuild / versionScheme := Some("early-semver")
+ThisBuild / scalaVersion := "3.6.4"
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
-
 ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
+ThisBuild / developers := List(
+  Developer(
+    id = "hakimjonas",
+    name = "Hakim Jonas Ghoula",
+    email = "hakim@ghoula.net",
+    url = url("https://github.com/hakimjonas")
+  )
+)
+
+ThisBuild / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/hakimjonas/valar"),
+    "scm:git@github.com:hakimjonas/valar.git"
+  )
+)
+
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+
+ThisBuild / publishTo := sonatypePublishToBundle.value
+// Compiler options
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
@@ -18,62 +33,32 @@ ThisBuild / scalacOptions ++= Seq(
   "-Wunused:all",
   "-no-indent"
 )
+ThisBuild / javacOptions ++= Seq("--release", "17")
 
-ThisBuild / javacOptions ++= Seq(
-  "--release",
-  "17"
-)
-
+// SemanticDB (for Scalafix)
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbIncludeInJar := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-// ===== Publishing Settings =====
-
-// Define publishing destination using sbt-sonatype helper
-// This automatically points to the correct Sonatype staging repo for releases
-// or the snapshots repo if the version ends in "-SNAPSHOT"
-ThisBuild / publishTo := sonatypePublishToBundle.value
-
-// Developer information (Required by Sonatype/Maven Central)
-ThisBuild / developers := List(
-  Developer(
-    id = "hakimjonas", // Your GitHub ID or unique identifier
-    name = "Hakim Jonas Ghoula", // Your Name
-    email = "hakim@walkthisway.dk", // Your Email
-    url = url("https://github.com/hakimjonas") // Optional URL
-  )
-)
-
-// SCM (Source Control Management) information (Required by Sonatype/Maven Central)
-ThisBuild / scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/hakimjonas/valar"),
-    "scm:git@github.com:hakimjonas/valar.git"
-  )
-)
-
-// Ensure sources and Javadoc JARs are published (Required by Sonatype/Maven Central)w
-// These settings configure the packageSrc and packageDoc tasks to be included
-// when publishing.
-ThisBuild / publishArtifact := true
-ThisBuild / Compile / packageDoc / publishArtifact := true // Enable publishing of Javadoc JAR
-ThisBuild / Compile / packageSrc / publishArtifact := true // Enable publishing of sources JAR
+// ===== Publishing & Signing Settings =====
+// Specify the signing key by hex ID
+pgpSigningKey := Some("2BE67AC00D699E04E840B7FE29967E804D85663F")
 
 // ===== Project Definition =====
-
 lazy val valar = (project in file("."))
-  .enablePlugins(MdocPlugin) // Enable the plugin for this project
+  .enablePlugins(MdocPlugin)
   .settings(
-    name := "valar", // Project name
-    // libraryDependencies only contains test dependencies, which is fine
+    name := "valar",
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2-core" % "5.6.2" % Test,
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
+
+    // Testing
     Test / fork := true,
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    // mdoc settings
+
+    // Documentation
     mdocIn := file("docs-src"),
     mdocOut := file("docs"),
     mdocExtraArguments := Seq(
@@ -81,14 +66,13 @@ lazy val valar = (project in file("."))
       (ThisBuild / baseDirectory).value.toString,
       "--include",
       "README.md"
-    )
+    ),
+
+    // Aliases
+    addCommandAlias("prepare", "fix; fmt"),
+    addCommandAlias("check", "+fixCheck; +fmtCheck"),
+    addCommandAlias("fix", "scalafixAll"),
+    addCommandAlias("fixCheck", "scalafixAll --check"),
+    addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll"),
+    addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
   )
-
-// ===== Command Aliases =====
-
-addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("check", "+fixCheck; +fmtCheck")
-addCommandAlias("fix", "scalafixAll")
-addCommandAlias("fixCheck", "scalafixAll --check")
-addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll")
-addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
