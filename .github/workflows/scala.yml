@@ -144,6 +144,26 @@ jobs:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
+      - name: Debug Secrets Availability
+        run: |
+          echo "Checking SONATYPE_USERNAME..."
+          if [ -z "$SONATYPE_USERNAME" ]; then 
+            echo "SONATYPE_USERNAME is empty or not set in the environment."
+          else 
+            echo "SONATYPE_USERNAME is SET in the environment."
+          fi
+          echo "Checking SONATYPE_PASSWORD..."
+          if [ -z "$SONATYPE_PASSWORD" ]; then 
+            echo "SONATYPE_PASSWORD is empty or not set in the environment."
+          else 
+            echo "SONATYPE_PASSWORD is SET in the environment."
+          fi
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+
+
+
       # --- ADDED: Publish to Sonatype and create GitHub Release ---
       - name: Publish release
         # This command uses sbt-ci-release plugin
