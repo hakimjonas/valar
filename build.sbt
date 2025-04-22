@@ -41,7 +41,7 @@ ThisBuild / semanticdbIncludeInJar := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 // ===== Publishing & Signing Settings =====
-
+ThisBuild / pgpSigningKey := Some("9614A0CE1CE76975")
 // ===== Project Definition =====
 lazy val valar = (project in file("."))
   .enablePlugins(MdocPlugin)
