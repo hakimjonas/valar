@@ -166,7 +166,6 @@ invalidAgeResult match {
   case Left(e)    => println(s"Invalid creation: ${e.prettyPrint()}")
 }
 
-println("----------------------------")
 ```
 
 ## Core Components

@@ -41,8 +41,6 @@ ThisBuild / semanticdbIncludeInJar := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 // ===== Publishing & Signing Settings =====
-// Specify the signing key by hex ID
-pgpSigningKey := Some("2BE67AC00D699E04E840B7FE29967E804D85663F")
 
 // ===== Project Definition =====
 lazy val valar = (project in file("."))
