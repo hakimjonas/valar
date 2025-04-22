@@ -61,7 +61,6 @@ ThisBuild / Compile / packageDoc / publishArtifact := true
 ThisBuild / Compile / packageSrc / publishArtifact := true
 
 // ===== Project Definition =====
-
 lazy val valar = (project in file("."))
   .enablePlugins(MdocPlugin)
   .settings(
