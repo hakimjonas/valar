@@ -589,8 +589,6 @@ object ValidationSpec extends Specification with Matchers with TraversableMatche
 
       result must beLike { case ValidationResult.Invalid(errors) =>
         errors must haveSize(3)
-        println(s"Actual errors found: ${errors.map(e => s"(Path: ${e.fieldPath}, Msg: ${e.message})").mkString("\n")}")
-
         val streetErrorOpt = errors.find(_.fieldPath == expectedStreetErrorPath)
         streetErrorOpt must beSome.like { case err =>
           err.message must beEqualTo(expectedStreetErrorMsg)

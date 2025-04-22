@@ -1,39 +1,10 @@
-// build.sbt
-
 // ===== Build-wide Settings =====
-
 ThisBuild / organization := "ghoula.net"
-
+ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.6.4"
-
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
-
 ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
-ThisBuild / scalacOptions ++= Seq(
-  "-deprecation",
-  "-feature",
-  "-unchecked",
-  "-Xfatal-warnings",
-  "-Wunused:all",
-  "-no-indent"
-)
-
-ThisBuild / javacOptions ++= Seq(
-  "--release",
-  "17"
-)
-
-ThisBuild / semanticdbEnabled := true
-ThisBuild / semanticdbIncludeInJar := true
-ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-
-// ===== Publishing Settings =====
-
-// This is the Sonatype repository for publishing artifacts
-ThisBuild / publishTo := sonatypePublishToBundle.value
-
-// Developer information (Required by Sonatype/Maven Central)
 ThisBuild / developers := List(
   Developer(
     id = "hakimjonas",
@@ -43,7 +14,6 @@ ThisBuild / developers := List(
   )
 )
 
-// Project information (Required by Sonatype/Maven Central)
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/hakimjonas/valar"),
@@ -51,14 +21,28 @@ ThisBuild / scmInfo := Some(
   )
 )
 
-// License information (Required by Sonatype/Maven Central)
-ThisBuild / licenses := Seq(
-  "MIT" -> url("http://opensource.org/licenses/MIT")
-)
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
-ThisBuild / publishArtifact := true
-ThisBuild / Compile / packageDoc / publishArtifact := true
-ThisBuild / Compile / packageSrc / publishArtifact := true
+ThisBuild / publishTo := sonatypePublishToBundle.value
+// Compiler options
+ThisBuild / scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Xfatal-warnings",
+  "-Wunused:all",
+  "-no-indent"
+)
+ThisBuild / javacOptions ++= Seq("--release", "17")
+
+// SemanticDB (for Scalafix)
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbIncludeInJar := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+
+// ===== Publishing & Signing Settings =====
+// Specify the signing key by hex ID
+pgpSigningKey := Some("2BE67AC00D699E04E840B7FE29967E804D85663F")
 
 // ===== Project Definition =====
 lazy val valar = (project in file("."))
@@ -69,8 +53,12 @@ lazy val valar = (project in file("."))
       "org.specs2" %% "specs2-core" % "5.6.2" % Test,
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
+
+    // Testing
     Test / fork := true,
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+
+    // Documentation
     mdocIn := file("docs-src"),
     mdocOut := file("docs"),
     mdocExtraArguments := Seq(
@@ -78,12 +66,13 @@ lazy val valar = (project in file("."))
       (ThisBuild / baseDirectory).value.toString,
       "--include",
       "README.md"
-    )
-  )
+    ),
 
-addCommandAlias("prepare", "fix; fmt")
-addCommandAlias("check", "+fixCheck; +fmtCheck")
-addCommandAlias("fix", "scalafixAll")
-addCommandAlias("fixCheck", "scalafixAll --check")
-addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll")
-addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
+    // Aliases
+    addCommandAlias("prepare", "fix; fmt"),
+    addCommandAlias("check", "+fixCheck; +fmtCheck"),
+    addCommandAlias("fix", "scalafixAll"),
+    addCommandAlias("fixCheck", "scalafixAll --check"),
+    addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll"),
+    addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
+  )
