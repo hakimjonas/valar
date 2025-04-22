@@ -1,29 +1,27 @@
-// ===== Build-wide Settings =====
+import sbt.*
+import sbt.Keys.*
+
+// Sonatype settings
+import xerial.sbt.Sonatype.autoImport.*
+enablePlugins(SbtPgp)
+
+// mdoc documentation plugin
+import _root_.mdoc.MdocPlugin
+// ===== Build‑wide Settings =====
 ThisBuild / organization := "ghoula.net"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.6.4"
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
-
 ThisBuild / developers := List(
-  Developer(
-    id = "hakimjonas",
-    name = "Hakim Jonas Ghoula",
-    email = "hakim@ghoula.net",
-    url = url("https://github.com/hakimjonas")
-  )
+  Developer("hakimjonas", "Hakim Jonas Ghoula", "hakim@ghoula.net", url("https://github.com/hakimjonas"))
 )
-
 ThisBuild / scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/hakimjonas/valar"),
-    "scm:git@github.com:hakimjonas/valar.git"
-  )
+  ScmInfo(url("https://github.com/hakimjonas/valar"), "scm:git@github.com:hakimjonas/valar.git")
 )
-
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-
 ThisBuild / publishTo := sonatypePublishToBundle.value
+
 // Compiler options
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
@@ -35,16 +33,14 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
-// SemanticDB (for Scalafix)
+// SemanticDB for Scalafix
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbIncludeInJar := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-// ===== Publishing & Signing Settings =====
-ThisBuild / pgpSigningKey := Some("9614A0CE1CE76975")
 // ===== Project Definition =====
 lazy val valar = (project in file("."))
-  .enablePlugins(MdocPlugin)
+  .enablePlugins(MdocPlugin, SbtPgp)
   .settings(
     name := "valar",
     libraryDependencies ++= Seq(
@@ -52,11 +48,15 @@ lazy val valar = (project in file("."))
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
 
+    // sbt-pgp signing configuration
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true,
+
     // Testing
     Test / fork := true,
     Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
 
-    // Documentation
+    // Documentation (mdoc)
     mdocIn := file("docs-src"),
     mdocOut := file("docs"),
     mdocExtraArguments := Seq(
@@ -66,7 +66,7 @@ lazy val valar = (project in file("."))
       "README.md"
     ),
 
-    // Aliases
+    // Aliases for formatting & linting
     addCommandAlias("prepare", "fix; fmt"),
     addCommandAlias("check", "+fixCheck; +fmtCheck"),
     addCommandAlias("fix", "scalafixAll"),
