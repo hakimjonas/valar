@@ -1,5 +1,10 @@
 # Valar – Type-Safe Validation for Scala 3
 
+[![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar_3?style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar_3)
+[![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
+
 Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
 metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
 detailed error messages useful for debugging or user feedback.
@@ -25,7 +30,7 @@ detailed error messages useful for debugging or user feedback.
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "net.ghoula" %% "valar" % "0.2.5"
+libraryDependencies += "net.ghoula" %% "valar" % "0.2.6"
 ````
 
 ## Basic Usage Example
