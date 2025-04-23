@@ -177,5 +177,5 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # Sonatype password/token
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token for creating GitHub release
-        run: sbt +publishSigned sonatypeCentralRelease
+        run: sbt +publishSigned sonatypeCentralUpload
 
