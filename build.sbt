@@ -47,6 +47,12 @@ lazy val valar = (project in file("."))
       "org.specs2" %% "specs2-core" % "5.6.2" % Test,
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
+    credentials += Credentials(
+      "Sonatype Nexus Repository Manager",
+      "s01.oss.sonatype.org",
+      sys.env.getOrElse("SONATYPE_USERNAME", ""),
+      sys.env.getOrElse("SONATYPE_PASSWORD", "")
+    ),
 
     // sbt-pgp signing configuration
     usePgpKeyHex("9614A0CE1CE76975"),
