@@ -65,7 +65,7 @@ object ValidationErrors {
     */
   extension (ve: ValidationError) {
 
-    /** Accesses the internal representation. Restricted to the library package `ghoula.net.valar`.
+    /** Accesses the internal representation. Restricted to the library package `net.ghoula.valar`.
       */
     private[valar] def internal: InternalValidationError = ve
 

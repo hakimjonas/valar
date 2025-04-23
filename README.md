@@ -25,7 +25,7 @@ detailed error messages useful for debugging or user feedback.
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "net.ghoula" %% "valar" % "0.2.1"
+libraryDependencies += "net.ghoula" %% "valar" % "0.2.5"
 ````
 
 ## Basic Usage Example

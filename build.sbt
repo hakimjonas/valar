@@ -8,7 +8,7 @@ enablePlugins(SbtPgp)
 // mdoc documentation plugin
 import _root_.mdoc.MdocPlugin
 // ===== Build‑wide Settings =====
-ThisBuild / organization := "ghoula.net"
+ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.6.4"
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
