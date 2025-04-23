@@ -118,8 +118,8 @@ jobs:
     needs: build # Depends on the build job succeeding
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed for sbt-ci-release to create GitHub release
-      id-token: write # Needed for GPG key import action
+      contents: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -166,10 +166,10 @@ jobs:
 
       # --- ADDED: Publish to Sonatype and create GitHub Release ---
       - name: Publish release
-        # This command uses sbt-ci-release plugin
         # It typically handles:
         # - PGP signing (using sbt-pgp settings, finds key via GPG agent)
-        # - Publishing artifacts (JAR, sources, javadoc, POM, signatures) to Sonatype OSSRH
+        # - Publishing artifacts (JAR, sources, javadoc, POM, signatures)
+        # - Staging the release on Sonatype
         # - Closing and releasing the staging repository on Sonatype
         # - Creating a GitHub Release for the tag
         env:
@@ -177,5 +177,5 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # Sonatype password/token
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token for creating GitHub release
-        run: sbt ci-release
+        run: sbt +publishSigned sonatypeCentralRelease
 

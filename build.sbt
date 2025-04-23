@@ -2,7 +2,7 @@ import sbt.*
 import sbt.Keys.*
 
 // Sonatype settings
-import xerial.sbt.Sonatype.autoImport.*
+import xerial.sbt.Sonatype.sonatypeCentralHost
 enablePlugins(SbtPgp)
 
 // mdoc documentation plugin
@@ -19,7 +19,7 @@ ThisBuild / developers := List(
 ThisBuild / scmInfo := Some(
   ScmInfo(url("https://github.com/hakimjonas/valar"), "scm:git@github.com:hakimjonas/valar.git")
 )
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 // Compiler options
@@ -47,13 +47,6 @@ lazy val valar = (project in file("."))
       "org.specs2" %% "specs2-core" % "5.6.2" % Test,
       "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
     ),
-    credentials += Credentials(
-      "Sonatype Nexus Repository Manager",
-      "s01.oss.sonatype.org",
-      sys.env.getOrElse("SONATYPE_USERNAME", ""),
-      sys.env.getOrElse("SONATYPE_PASSWORD", "")
-    ),
-
     // sbt-pgp signing configuration
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
