@@ -1,10 +1,5 @@
 package net.ghoula.valar
 
-import net.ghoula.valar.ValidationErrors.ValidationError
-import net.ghoula.valar.ValidationHelpers.*
-import net.ghoula.valar.ValidationResult.{validateUnion, given}
-import net.ghoula.valar.internal.MacroHelpers
-
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, ZonedDateTime}
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
@@ -12,6 +7,11 @@ import scala.compiletime.{constValueTuple, summonInline}
 import scala.deriving.Mirror
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
+
+import net.ghoula.valar.ValidationErrors.ValidationError
+import net.ghoula.valar.ValidationHelpers.*
+import net.ghoula.valar.ValidationResult.{validateUnion, given}
+import net.ghoula.valar.internal.MacroHelpers
 
 /** A typeclass for defining custom validation logic for type `A`.
   *

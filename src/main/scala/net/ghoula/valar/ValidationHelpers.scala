@@ -1,9 +1,9 @@
 package net.ghoula.valar
 
-import net.ghoula.valar.ValidationErrors.ValidationError
-
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
+
+import net.ghoula.valar.ValidationErrors.ValidationError
 
 /** Provides reusable helper functions for common validation scenarios.
   *
@@ -73,29 +73,35 @@ object ValidationHelpers {
         )
       )
 
-  /** Validates that a float is finite (not NaN or infinite). */
-  def finiteFloat(f: Float, errorMessage: Float => String = _ => "Float must be finite"): ValidationResult[Float] =
-    if f.isFinite then ValidationResult.Valid(f)
+  /** Generic helper for validating finite floating-point numbers. */
+  private def finiteNumber[T](
+    value: T,
+    isFinite: T => Boolean,
+    errorMessage: T => String
+  ): ValidationResult[T] =
+    if isFinite(value) then ValidationResult.Valid(value)
     else
       ValidationResult.invalid(
         ValidationError(
-          message = errorMessage(f),
+          message = errorMessage(value),
           expected = Some("finite value"),
-          actual = Some(f.toString)
+          actual = Some(value.toString)
         )
       )
 
+  /** Validates that a float is finite (not NaN or infinite). */
+  def finiteFloat(
+    f: Float,
+    errorMessage: Float => String = (_: Float) => "Float must be finite"
+  ): ValidationResult[Float] =
+    finiteNumber(f, _.isFinite, errorMessage)
+
   /** Validates that a double is finite (not NaN or infinite). */
-  def finiteDouble(d: Double, errorMessage: Double => String = _ => "Double must be finite"): ValidationResult[Double] =
-    if d.isFinite then ValidationResult.Valid(d)
-    else
-      ValidationResult.invalid(
-        ValidationError(
-          message = errorMessage(d),
-          expected = Some("finite value"),
-          actual = Some(d.toString)
-        )
-      )
+  def finiteDouble(
+    d: Double,
+    errorMessage: Double => String = (_: Double) => "Double must be finite"
+  ): ValidationResult[Double] =
+    finiteNumber(d, _.isFinite, errorMessage)
 
   /** Validates that a string is non-null and does not exceed a maximum length. Null is invalid. */
   def maxLengthValidator(
@@ -245,7 +251,7 @@ object ValidationHelpers {
 
   /** Validates that an integer is within a specified range [min, max]. */
   def inRange(i: Int, min: Int, max: Int)(
-    errorMessage: Int => String = i => s"Must be in range [$min, $max]"
+    errorMessage: Int => String = _ => s"Must be in range [$min, $max]"
   ): ValidationResult[Int] =
     if i >= min && i <= max then ValidationResult.Valid(i)
     else
@@ -259,7 +265,7 @@ object ValidationHelpers {
 
   /** Validates that a value is present within a set of allowed values. */
   def oneOf[A](a: A, validValues: Set[A])(
-    errorMessage: A => String = (a: A) => s"Must be one of ${validValues.mkString(", ")}"
+    errorMessage: A => String = (_: A) => s"Must be one of ${validValues.mkString(", ")}"
   ): ValidationResult[A] =
     if validValues.contains(a) then ValidationResult.Valid(a)
     else
