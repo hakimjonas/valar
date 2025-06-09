@@ -5,6 +5,7 @@ import java.util.UUID
 import scala.collection.immutable.ArraySeq
 import scala.compiletime.{constValueTuple, summonInline}
 import scala.deriving.Mirror
+import scala.language.reflectiveCalls
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
@@ -206,6 +207,26 @@ object Validator {
     }
   }
 
+  /** Helper method for validating iterable collections and building results. This eliminates
+    * duplication between collection validators.
+    */
+  private def validateIterable[A, C[_]](
+    xs: Iterable[A],
+    builder: Vector[A] => C[A]
+  )(using v: Validator[A]): ValidationResult[C[A]] = {
+    val resultsIterator = xs.iterator.map(v.validate)
+    val initial = (Vector.empty[ValidationError], Vector.empty[A])
+    val (errors, validValues) = resultsIterator.foldLeft(initial) {
+      case ((currentErrors, currentValidValues), result) =>
+        result match {
+          case ValidationResult.Valid(a) => (currentErrors, currentValidValues :+ a)
+          case ValidationResult.Invalid(e2) => (currentErrors ++ e2, currentValidValues)
+        }
+    }
+    if (errors.isEmpty) ValidationResult.Valid(builder(validValues))
+    else ValidationResult.Invalid(errors)
+  }
+
   /** Validates an `Array[A]` by validating each element using the implicit `Validator[A]`.
     * Accumulates all errors found in invalid elements.
     *
@@ -219,19 +240,8 @@ object Validator {
     *   A `Validator[Array[A]]`.
     */
   given arrayValidator[A](using v: Validator[A], ct: ClassTag[A]): Validator[Array[A]] with {
-    def validate(xs: Array[A]): ValidationResult[Array[A]] = { /* ... unchanged, optimized version ... */
-      val resultsIterator: Iterator[ValidationResult[A]] = xs.iterator.map(v.validate)
-      val initial = (Vector.empty[ValidationError], Vector.empty[A])
-      val (errors, validValues) = resultsIterator.foldLeft(initial) {
-        case ((currentErrors, currentValidValues), result) =>
-          result match {
-            case ValidationResult.Valid(a) => (currentErrors, currentValidValues :+ a)
-            case ValidationResult.Invalid(e2) => (currentErrors ++ e2, currentValidValues)
-          }
-      }
-      if (errors.isEmpty) ValidationResult.Valid(validValues.toArray)
-      else ValidationResult.Invalid(errors)
-    }
+    def validate(xs: Array[A]): ValidationResult[Array[A]] =
+      validateIterable(xs, (validValues: Vector[A]) => validValues.toArray)
   }
 
   /** Validates an `ArraySeq[A]` by validating each element using the implicit `Validator[A]`.
@@ -247,15 +257,8 @@ object Validator {
     *   A `Validator[ArraySeq[A]]`.
     */
   given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A]): Validator[ArraySeq[A]] with {
-    def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] = {
-      val results = xs.map(v.validate)
-      val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
-        case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-        case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
-      }
-      if errors.isEmpty then ValidationResult.Valid(ArraySeq.unsafeWrapArray(validValues.toArray))
-      else ValidationResult.Invalid(errors)
-    }
+    def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] =
+      validateIterable(xs, (validValues: Vector[A]) => ArraySeq.unsafeWrapArray(validValues.toArray))
   }
 
   /** Validates an intersection type `A & B` by applying both `Validator[A]` and `Validator[B]`. The
@@ -337,7 +340,6 @@ object Validator {
 
   /** Pass-through validator for BigInt. Always returns Valid. */
   given bigIntValidator: Validator[BigInt] with {
-    // No standard constraints like finiteness apply easily.
     def validate(bi: BigInt): ValidationResult[BigInt] = ValidationResult.Valid(bi)
   }
 
@@ -435,24 +437,34 @@ object Validator {
     * @return
     *   Validator[T] automatically derived validator instance
     */
-  inline def deriveValidatorMacro[T <: Product](using m: Mirror.ProductOf[T]): Validator[T] =
+  inline def deriveValidatorMacro[T](using m: Mirror.ProductOf[T]): Validator[T] =
     ${ deriveValidatorMacroImpl[T, m.MirroredElemTypes, m.MirroredElemLabels]('m) }
 
-  private def deriveValidatorMacroImpl[T <: Product: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
+  private def deriveValidatorMacroImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
   )(using q: Quotes): Expr[Validator[T]] = {
     import q.reflect.*
     if !(TypeRepr.of[Elems] <:< TypeRepr.of[Tuple]) then
       report.errorAndAbort(s"deriveValidatorMacro: Expected Elems to be a Tuple type, but got ${Type.show[Elems]}")
+
     '{
       new Validator[T] {
         def validate(a: T): ValidationResult[T] = {
-          val elems: Elems = MacroHelpers.upcastTo[Elems](Tuple.fromProduct(a))
-          val labels: Labels = constValueTuple[Labels]
-          val validatedElemsResult: ValidationResult[Elems] = ${
-            validateTupleWithLabelsMacro[Elems, Labels]('{ elems }, '{ labels })
+          val productResult: Either[ValidationError, Product] = a match {
+            case product: Product => Right(product)
+            case other => Left(ValidationErrors.ValidationError(s"Expected Product type, got ${other.getClass}"))
           }
-          validatedElemsResult.map { validatedElems => $m.fromProduct(validatedElems) }
+
+          productResult match {
+            case Left(error) => ValidationResult.invalid(error)
+            case Right(product) =>
+              val elems: Elems = MacroHelpers.upcastTo[Elems](Tuple.fromProduct(product))
+              val labels: Labels = constValueTuple[Labels]
+              val validatedElemsResult: ValidationResult[Elems] = ${
+                validateTupleWithLabelsMacro[Elems, Labels]('{ elems }, '{ labels })
+              }
+              validatedElemsResult.map { validatedElems => $m.fromProduct(validatedElems) }
+          }
         }
       }
     }

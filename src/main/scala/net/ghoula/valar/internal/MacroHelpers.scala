@@ -5,7 +5,7 @@ import scala.quoted.{Expr, Quotes, Type}
 
 import net.ghoula.valar.Validator
 
-/** Internal helper methods for macros, primarily for type casting which is inherently unsafe but
+/** Internal helper methods for macros, primarily for type casting - which is inherently unsafe but
   * necessary when bridging compile-time types and runtime values in macros or dealing with
   * unavoidable type erasure limitations (like in `validateUnion`). Use with extreme caution, only
   * when macro logic guarantees type compatibility.
