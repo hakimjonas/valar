@@ -12,14 +12,13 @@ detailed error messages useful for debugging or user feedback.
 
 * **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using
   `ValidationResult[A]`. Eliminate runtime errors caused by unexpected validation states.
-* **Named Tuple Support:** 🆕 Field-aware error messages for Scala 3.7's named tuples, with preserved backward
-  compatibility.
+* **Named Tuple Support:** 🆕 Field-aware error messages for Scala 3.7's named tuples, with preserved backward compatibility.
 * **Minimal Boilerplate:** Derive `Validator` instances automatically for case classes using compile-time macros,
   significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
 * **Flexible Error Handling:** Choose the strategy that fits your use case:
-    * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in
-      UIs or API responses).
-    * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
+  * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in
+    UIs or API responses).
+  * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
 * **Actionable Error Reports:** Generate detailed `ValidationError` objects containing precise field paths, validation
   rule specifics (like expected vs. actual values), and optional codes/severity, making debugging and error reporting
   straightforward.
@@ -38,8 +37,7 @@ libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
 Here's a basic example illustrating how to use Valar for validating a simple case class:
 
-*Note: Valar provides default validators for `String` (non-empty) and `Int` (non-negative). This example explicitly
-defines `given` instances to demonstrate how you can define custom logic or override the defaults.*
+*Note: Valar provides default validators for `String` (non-empty) and `Int` (non-negative). This example explicitly defines `given` instances to demonstrate how you can define custom logic or override the defaults.*
 
 ```scala
 import net.ghoula.valar.{ValidationResult, Validator}
@@ -120,8 +118,7 @@ result match {
 
 ## Named Tuples Support 🆕
 
-Valar 0.3.0 adds support for Scala 3.7's named tuples, providing improved error messages that include actual field
-names:
+Valar 0.3.0 adds support for Scala 3.7's named tuples, providing improved error messages that include actual field names:
 
 ```scala
 import net.ghoula.valar.*
@@ -171,13 +168,13 @@ tupleResult match {
       println(s"Field: ${error.fieldPath.mkString(".")}")
       println(s"Error: ${error.message}")
     }
-  // Output includes meaningful field names:
-  // Field: name
-  // Error: String must not be empty
-  // Field: age  
-  // Error: Int must be non-negative
-  // Field: email
-  // Error: String must not be empty
+    // Output includes meaningful field names:
+    // Field: name
+    // Error: String must not be empty
+    // Field: age  
+    // Error: Int must be non-negative
+    // Field: email
+    // Error: String must not be empty
 }
 // Field: name
 // Error: Invalid field: name, field type: String: Name must not be empty
@@ -186,7 +183,6 @@ tupleResult match {
 ```
 
 **Key Benefits:**
-
 - **Enhanced debugging** - Error messages include meaningful field names
 - **Zero runtime overhead** - Field names are extracted at compile time
 - **Future-proof** - Compatible with the upcoming Scala 3 LTS version
@@ -200,8 +196,7 @@ validator.validate(regularTuple) // Works but shows generic positions in errors
 
 ## Defining Custom Validators
 
-Valar allows you to define custom validators easily by implementing the `Validator` typeclass. Here's an example
-demonstrating how you might define a validator for an `Age` type:
+Valar allows you to define custom validators easily by implementing the `Validator` typeclass. Here's an example demonstrating how you might define a validator for an `Age` type:
 
 ```scala
 import net.ghoula.valar.*
@@ -265,7 +260,7 @@ object MyAgeModule {
 
     // Define a Validator instance for Age to integrate with Valar's validation system
     given ageValidator: Validator[Age] with {
-      def validate(value: Age): ValidationResult[Age] = Age.apply(value)
+      def validate(value: Age): ValidationResult[Age] = Age.apply (value)
     }
   }
 }
@@ -358,15 +353,11 @@ case class Config(host: String, port: Int)
 given configValidator: Validator[Config] = deriveValidatorMacro
 ```
 
-**Important Note on Derivation:** Automatic derivation with `deriveValidatorMacro` requires implicit `Validator`
-instances to be available in scope for **all** field types within the case class. If a validator for any field type is
-missing, **compilation will fail**. This strictness ensures that all fields are explicitly considered during validation,
-preventing silent omissions. See the "Built-in Validators" section below for types supported out-of-the-box.
+**Important Note on Derivation:** Automatic derivation with `deriveValidatorMacro` requires implicit `Validator` instances to be available in scope for **all** field types within the case class. If a validator for any field type is missing, **compilation will fail**. This strictness ensures that all fields are explicitly considered during validation, preventing silent omissions. See the "Built-in Validators" section below for types supported out-of-the-box.
 
 ### Helper Methods
 
-Common validations like non-empty strings, numeric ranges, regex patterns, and more are available in
-`net.ghoula.valar.ValidationHelpers`:
+Common validations like non-empty strings, numeric ranges, regex patterns, and more are available in `net.ghoula.valar.ValidationHelpers`:
 
 ```scala
 import net.ghoula.valar.ValidationHelpers.*
@@ -392,25 +383,18 @@ optional(Option.empty[String]) // Validates inner value if Some, passes if None
 
 ## Built-in Validators
 
-Valar provides `given Validator` instances out-of-the-box for many common types to ease setup and support derivation.
-This includes:
+Valar provides `given Validator` instances out-of-the-box for many common types to ease setup and support derivation. This includes:
 
-* **Scala Primitives:** `Int` (non-negative), `String` (non-empty), `Boolean`, `Long`, `Double` (finite), `Float` (
-  finite), `Byte`, `Short`, `Char`, `Unit`.
+* **Scala Primitives:** `Int` (non-negative), `String` (non-empty), `Boolean`, `Long`, `Double` (finite), `Float` (finite), `Byte`, `Short`, `Char`, `Unit`.
 * **Other Scala Types:** `BigInt`, `BigDecimal`, `Symbol`.
-* **Common Java Types:** `java.util.UUID`, `java.time.Instant`, `java.time.LocalDate`, `java.time.LocalDateTime`,
-  `java.time.ZonedDateTime`, `java.time.LocalTime`, `java.time.Duration`.
-* **Standard Collections:** `Option`, `List`, `Vector`, `Seq`, `Set`, `Array`, `ArraySeq`, `Map` (provided validators
-  exist for their element/key/value types).
-* **Tuple Types:**
-    * **Named tuples** 🆕 - Enhanced error messages with actual field names
-    * **Regular tuples** - Backward compatible validation (field names not available in errors)
+* **Common Java Types:** `java.util.UUID`, `java.time.Instant`, `java.time.LocalDate`, `java.time.LocalDateTime`, `java.time.ZonedDateTime`, `java.time.LocalTime`, `java.time.Duration`.
+* **Standard Collections:** `Option`, `List`, `Vector`, `Seq`, `Set`, `Array`, `ArraySeq`, `Map` (provided validators exist for their element/key/value types).
+* **Tuple Types:** 
+  * **Named tuples** 🆕 - Enhanced error messages with actual field names
+  * **Regular tuples** - Backward compatible validation (field names not available in errors)
 * **Intersection (`&`) and Union (`|`) Types:** Provided corresponding validators for the constituent types exist.
 
-Most built-in validators for scalar types (excluding those with obvious constraints like `Int`, `String`, `Float`,
-`Double`) are **pass-through** validators, meaning they always return `Valid` by default. This ensures derivation
-compiles without imposing arbitrary rules. You should define custom validators if you need specific constraints for
-these types (e.g., range checks for `Long`, specific formats for `UUID`).
+Most built-in validators for scalar types (excluding those with obvious constraints like `Int`, `String`, `Float`, `Double`) are **pass-through** validators, meaning they always return `Valid` by default. This ensures derivation compiles without imposing arbitrary rules. You should define custom validators if you need specific constraints for these types (e.g., range checks for `Long`, specific formats for `UUID`).
 
 ## Migration Guide
 
@@ -434,7 +418,6 @@ namedValidator.validate(namedTuple) // Errors include field names!
 **Breaking Changes:** None! This is a backward-compatible release.
 
 **To adopt named tuples:**
-
 1. Define your tuple types with field names: `type Person = (name: String, age: Int)`
 2. Use automatic derivation: `given Validator[Person] = Validator.deriveValidatorMacro`
 3. Enjoy enhanced error messages with actual field names
@@ -444,13 +427,8 @@ namedValidator.validate(namedTuple) // Errors include field names!
 - **Scala:** 3.4+ (recommended: 3.7+)
 - **Dependencies:** None (zero external dependencies)
 
-> **Note on Scala 3.7**: Scala 3.7 introduces changes to Givens prioritization which may affect how validators are
-> resolved when multiple instances are available. If you define custom validators that could potentially conflict (like
-> for type aliases or inheritance hierarchies), you may need to be more explicit about which validator to use or test
-> thoroughly with your specific Scala version. See
-> the [Scala documentation](https://scala-lang.org/2024/08/19/given-priority-change-3.7.html) for details.
+> **Note on Scala 3.7**: Scala 3.7 introduces changes to Givens prioritization which may affect how validators are resolved when multiple instances are available. If you define custom validators that could potentially conflict (like for type aliases or inheritance hierarchies), you may need to be more explicit about which validator to use or test thoroughly with your specific Scala version. See the [Scala documentation](https://scala-lang.org/2024/08/19/given-priority-change-3.7.html) for details.
 
 ## License
 
-Valar is licensed under the **MIT License**. See the [LICENSE](https://github.com/hakimjonas/valar/blob/main/LICENSE)
-file for details.
+Valar is licensed under the **MIT License**. See the [LICENSE](https://github.com/hakimjonas/valar/blob/main/LICENSE) file for details.
