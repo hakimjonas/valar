@@ -52,7 +52,7 @@ jobs:
       - name: Check documentation (mdoc)
         # Verifies that code snippets in docs compile
         # Pass arguments to the mdoc task within quotes for sbt
-        run: sbt "mdoc --check" # <-- MODIFIED THIS LINE
+        run: sbt "mdoc --check" #
 
       - name: Package artifact and generate POM
         # Creates the JAR and POM files needed for publishing

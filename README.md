@@ -4,7 +4,6 @@
 [![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-
 Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
 metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
 detailed error messages useful for debugging or user feedback.
@@ -13,6 +12,7 @@ detailed error messages useful for debugging or user feedback.
 
 * **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using
   `ValidationResult[A]`. Eliminate runtime errors caused by unexpected validation states.
+* **Named Tuple Support:** 🆕 Field-aware error messages for Scala 3.7's named tuples, with preserved backward compatibility.
 * **Minimal Boilerplate:** Derive `Validator` instances automatically for case classes using compile-time macros,
   significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
 * **Flexible Error Handling:** Choose the strategy that fits your use case:
@@ -30,7 +30,7 @@ detailed error messages useful for debugging or user feedback.
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "net.ghoula" %% "valar" % "0.2.6"
+libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 ````
 
 ## Basic Usage Example
@@ -39,7 +39,7 @@ Here's a basic example illustrating how to use Valar for validating a simple cas
 
 *Note: Valar provides default validators for `String` (non-empty) and `Int` (non-negative). This example explicitly defines `given` instances to demonstrate how you can define custom logic or override the defaults.*
 
-```scala mdoc
+```scala
 import net.ghoula.valar.{ValidationResult, Validator}
 import net.ghoula.valar.ValidationResult.{Invalid, Valid}
 import net.ghoula.valar.ValidationErrors.ValidationError
@@ -77,9 +77,32 @@ given Validator[User] = deriveValidatorMacro
 
 // Create an instance of User with invalid age
 val user = User("", Some(-10))
+// user: User = User(name = "", age = Some(value = -10))
 
 // Validate the user instance
 val result: ValidationResult[User] = Validator[User].validate(user)
+// result: ValidationResult[User] = Invalid(
+//   errors = Vector(
+//     InternalValidationError(
+//       message = "Invalid field: name, field type: String: Name must not be empty",
+//       fieldPath = List("name"),
+//       children = Vector(),
+//       code = None,
+//       severity = None,
+//       expected = Some(value = "non-empty string"),
+//       actual = Some(value = "")
+//     ),
+//     InternalValidationError(
+//       message = "Invalid field: age, field type: Option: Age must be non-negative, got -10",
+//       fieldPath = List("age"),
+//       children = Vector(),
+//       code = None,
+//       severity = None,
+//       expected = Some(value = ">= 0"),
+//       actual = Some(value = "-10")
+//     )
+//   )
+// )
 
 // Handle the validation result
 result match {
@@ -88,25 +111,116 @@ result match {
     println("Validation Failed:")
     println(errors.map(_.prettyPrint(indent = 2)).mkString("\n"))
 }
+// Validation Failed:
+// name: Invalid field: name, field type: String: Name must not be empty (expected: non-empty string) (got: )
+// age: Invalid field: age, field type: Option: Age must be non-negative, got -10 (expected: >= 0) (got: -10)
+```
 
+## Named Tuples Support 🆕
+
+Valar 0.3.0 adds support for Scala 3.7's named tuples, providing improved error messages that include actual field names:
+
+```scala
+import net.ghoula.valar.*
+
+// Define a named tuple type with meaningful field names
+type PersonTuple = (name: String, age: Int, email: String)
+
+// Automatic derivation works seamlessly with named tuples
+given Validator[PersonTuple] = Validator.deriveValidatorMacro
+
+val invalidPerson: PersonTuple = (name = "", age = -10, email = "bad-email")
+// invalidPerson: NamedTuple[Tuple3["name", "age", "email"], Tuple3[String, Int, String]] = (
+//   "",
+//   -10,
+//   "bad-email"
+// )
+val tupleResult = summon[Validator[PersonTuple]].validate(invalidPerson)
+// tupleResult: ValidationResult[PersonTuple] = Invalid(
+//   errors = Vector(
+//     InternalValidationError(
+//       message = "Invalid field: name, field type: String: Name must not be empty",
+//       fieldPath = List("name"),
+//       children = Vector(),
+//       code = None,
+//       severity = None,
+//       expected = Some(value = "non-empty string"),
+//       actual = Some(value = "")
+//     ),
+//     InternalValidationError(
+//       message = "Invalid field: age, field type: Int: Age must be non-negative, got -10",
+//       fieldPath = List("age"),
+//       children = Vector(),
+//       code = None,
+//       severity = None,
+//       expected = Some(value = ">= 0"),
+//       actual = Some(value = "-10")
+//     )
+//   )
+// )
+
+// Error messages now include actual field names for enhanced debugging!
+tupleResult match {
+  case ValidationResult.Valid(validPerson) =>
+    println(s"Valid person: $validPerson")
+  case ValidationResult.Invalid(errors) =>
+    errors.foreach { error =>
+      println(s"Field: ${error.fieldPath.mkString(".")}")
+      println(s"Error: ${error.message}")
+    }
+    // Output includes meaningful field names:
+    // Field: name
+    // Error: String must not be empty
+    // Field: age  
+    // Error: Int must be non-negative
+    // Field: email
+    // Error: String must not be empty
+}
+// Field: name
+// Error: Invalid field: name, field type: String: Name must not be empty
+// Field: age
+// Error: Invalid field: age, field type: Int: Age must be non-negative, got -10
+```
+
+**Key Benefits:**
+- **Enhanced debugging** - Error messages include meaningful field names
+- **Zero runtime overhead** - Field names are extracted at compile time
+- **Future-proof** - Compatible with the upcoming Scala 3 LTS version
+
+```scala
+// Regular tuples continue to work as before
+val regularTuple: (String, Int) = ("", -5)
+val validator = summon[Validator[(String, Int)]]
+validator.validate(regularTuple) // Works but shows generic positions in errors
 ```
 
 ## Defining Custom Validators
 
 Valar allows you to define custom validators easily by implementing the `Validator` typeclass. Here's an example demonstrating how you might define a validator for an `Age` type:
 
-```scala mdoc
+```scala
 import net.ghoula.valar.*
-import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
+import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.ValidationHelpers.*
 import net.ghoula.valar.ValidationResult.{Invalid, Valid}
 import scala.util.Either
+
+// Example using ValidationHelpers directly
+val emailRegex = "[^@]+@[^@]+\\.[^@]+".r
+// emailRegex: Regex = [^@]+@[^@]+\.[^@]+
+val emailValidationResult = regexMatch("user@example.com", emailRegex)(email => s"Invalid email format: $email")
+// emailValidationResult: ValidationResult[String] = Valid(
+//   value = "user@example.com"
+// )
+println(s"Email validation result: $emailValidationResult")
+// Email validation result: Valid(user@example.com)
 
 // Create a module to encapsulate an opaque type with validation
 object MyAgeModule {
 
   // Define an opaque type to enforce validation at compile time
-  opaque type Age = Int
+  opaque
+  type Age = Int
 
   object Age {
     /**
@@ -132,7 +246,7 @@ object MyAgeModule {
     def apply(value: Int): ValidationResult[Age] = {
       validateEither(value) match {
         case Right(age) => Valid(age)
-        case Left(err)  => Invalid(Vector(err))
+        case Left(err) => Invalid(Vector(err))
       }
     }
 
@@ -146,31 +260,46 @@ object MyAgeModule {
 
     // Define a Validator instance for Age to integrate with Valar's validation system
     given ageValidator: Validator[Age] with {
-      def validate(value: Age): ValidationResult[Age] = Age.apply(value)
+      def validate(value: Age): ValidationResult[Age] = Age.apply (value)
     }
   }
 }
 
 // Usage example showing how to work with the validated type
+
 import MyAgeModule.Age
 
 println("--- Testing Validated Age Type ---")
+// --- Testing Validated Age Type ---
 
 // Validate using Either-based API
 val validAgeResult = Age.validateEither(25)
+// validAgeResult: Either[ValidationError, Age] = Right(value = 25)
 val invalidAgeResult = Age.validateEither(-3)
+// invalidAgeResult: Either[ValidationError, Age] = Left(
+//   value = InternalValidationError(
+//     message = "❌ Must be between 0 and 130.",
+//     fieldPath = List(),
+//     children = Vector(),
+//     code = None,
+//     severity = None,
+//     expected = None,
+//     actual = None
+//   )
+// )
 
 // Handle validation results
 validAgeResult match {
   case Right(age) => println(s"Valid age: $age")
-  case Left(e)    => println(s"Invalid creation: ${e.prettyPrint()}")
+  case Left(e) => println(s"Invalid creation: ${e.prettyPrint()}")
 }
+// Valid age: 25
 
 invalidAgeResult match {
   case Right(age) => println(s"Valid age: $age")
-  case Left(e)    => println(s"Invalid creation: ${e.prettyPrint()}")
+  case Left(e) => println(s"Invalid creation: ${e.prettyPrint()}")
 }
-
+// Invalid creation: ❌ Must be between 0 and 130.
 ```
 
 ## Core Components
@@ -213,7 +342,7 @@ trait Validator[A] {
 
 Validators can be automatically derived for case classes using `deriveValidatorMacro`:
 
-```scala mdoc
+```scala
 import net.ghoula.valar.Validator
 import net.ghoula.valar.Validator.deriveValidatorMacro
 
@@ -242,7 +371,7 @@ nonEmpty("value") // Returns Valid("value")
 
 // Numeric validations
 positiveInt(5) // Validates integer is positive
-inRange(3, 1, 10)() // Validates value is within inclusive range [1, 10]
+inRange(3, 1, 10)() // Validates value is within the inclusive range [1, 10]
 
 // Pattern matching validation
 regexMatch("abc123", "[a-z]+[0-9]+")() // Validates string matches the pattern
@@ -260,10 +389,45 @@ Valar provides `given Validator` instances out-of-the-box for many common types 
 * **Other Scala Types:** `BigInt`, `BigDecimal`, `Symbol`.
 * **Common Java Types:** `java.util.UUID`, `java.time.Instant`, `java.time.LocalDate`, `java.time.LocalDateTime`, `java.time.ZonedDateTime`, `java.time.LocalTime`, `java.time.Duration`.
 * **Standard Collections:** `Option`, `List`, `Vector`, `Seq`, `Set`, `Array`, `ArraySeq`, `Map` (provided validators exist for their element/key/value types).
-* **Tuple Types:** Validators for tuples are derived implicitly when deriving for case classes.
+* **Tuple Types:** 
+  * **Named tuples** 🆕 - Enhanced error messages with actual field names
+  * **Regular tuples** - Backward compatible validation (field names not available in errors)
 * **Intersection (`&`) and Union (`|`) Types:** Provided corresponding validators for the constituent types exist.
 
 Most built-in validators for scalar types (excluding those with obvious constraints like `Int`, `String`, `Float`, `Double`) are **pass-through** validators, meaning they always return `Valid` by default. This ensures derivation compiles without imposing arbitrary rules. You should define custom validators if you need specific constraints for these types (e.g., range checks for `Long`, specific formats for `UUID`).
+
+## Migration Guide
+
+### From 0.2.x to 0.3.0
+
+**Named Tuples** are a **completely optional** enhancement. Your existing code continues to work unchanged:
+
+```scala
+// ✅ This still works exactly as before
+val regularTuple: (String, Int) = ("test", 42)
+val validator = summon[Validator[(String, Int)]]
+validator.validate(regularTuple)
+
+// ✅ New: Enhanced error messages with named tuples
+type NamedTuple = (name: String, age: Int)
+val namedTuple: NamedTuple = (name = "test", age = 42)
+val namedValidator = summon[Validator[NamedTuple]]
+namedValidator.validate(namedTuple) // Errors include field names!
+```
+
+**Breaking Changes:** None! This is a backward-compatible release.
+
+**To adopt named tuples:**
+1. Define your tuple types with field names: `type Person = (name: String, age: Int)`
+2. Use automatic derivation: `given Validator[Person] = Validator.deriveValidatorMacro`
+3. Enjoy enhanced error messages with actual field names
+
+## Compatibility
+
+- **Scala:** 3.4+ (recommended: 3.7+)
+- **Dependencies:** None (zero external dependencies)
+
+> **Note on Scala 3.7**: Scala 3.7 introduces changes to Givens prioritization which may affect how validators are resolved when multiple instances are available. If you define custom validators that could potentially conflict (like for type aliases or inheritance hierarchies), you may need to be more explicit about which validator to use or test thoroughly with your specific Scala version. See the [Scala documentation](https://scala-lang.org/2024/08/19/given-priority-change-3.7.html) for details.
 
 ## License
 

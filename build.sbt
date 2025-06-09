@@ -10,7 +10,7 @@ import _root_.mdoc.MdocPlugin
 // ===== Build‑wide Settings =====
 ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / scalaVersion := "3.6.4"
+ThisBuild / scalaVersion := "3.7.1"
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 ThisBuild / developers := List(
@@ -44,8 +44,8 @@ lazy val valar = (project in file("."))
   .settings(
     name := "valar",
     libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "5.6.2" % Test,
-      "org.specs2" %% "specs2-matcher-extra" % "5.6.2" % Test
+      "org.specs2" %% "specs2-core" % "5.6.3" % Test,
+      "org.specs2" %% "specs2-matcher-extra" % "5.6.3" % Test
     ),
     // sbt-pgp signing configuration
     usePgpKeyHex("9614A0CE1CE76975"),

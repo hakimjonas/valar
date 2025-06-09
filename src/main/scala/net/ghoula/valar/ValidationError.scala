@@ -7,7 +7,7 @@ object ValidationErrors {
 
   /** Represents detailed validation errors with structured information.
     *
-    * Provides a rich error context including the specific field path, expected vs actual values,
+    * Provides a rich error context including the specific field path, expected vs. actual values,
     * and optional error codes and severity indicators.
     *
     * Internally represented as [[InternalValidationError]]. This prevents users from directly
@@ -127,29 +127,34 @@ private[valar] final case class InternalValidationError(
   def nest(childErrors: Vector[InternalValidationError]): InternalValidationError =
     copy(children = children ++ childErrors)
 
-  /** Compact, single-line representation. */
-  def show: String = { /* ... implementation unchanged ... */
-    val path = if (fieldPath.isEmpty) "" else s"${fieldPath.reverse.mkString(".")}: "
-    val extras = List(
+  /** Helper method to format the extras (code, severity, expected, actual) */
+  private def formatExtras: String = {
+    List(
       code.map(c => s"[$c]"),
       severity.map(s => s"<$s>"),
       expected.map(e => s"(expected: $e)"),
       actual.map(a => s"(got: $a)")
     ).flatten.mkString(" ")
+  }
+
+  /** Helper method to format the field path */
+  private def formatFieldPath(separator: String): String = {
+    if (fieldPath.isEmpty) "" else s"${fieldPath.reverse.mkString(".")}$separator"
+  }
+
+  /** Compact, single-line representation. */
+  def show: String = {
+    val path = formatFieldPath(": ")
+    val extras = formatExtras
     val childMessages = if (children.nonEmpty) children.map(_.show).mkString("\n  ", "\n  ", "") else ""
     s"$path$message $extras$childMessages".trim
   }
 
   /** Pretty-printed, multi-line representation with indentation. */
-  def prettyPrint(indent: Int = 0): String = { /* ... implementation unchanged ... */
+  def prettyPrint(indent: Int = 0): String = {
     val pad = " " * indent
-    val fieldPrefix = if (fieldPath.isEmpty) "" else String.format("%s: ", fieldPath.reverse.mkString("."))
-    val extras = List(
-      code.map(c => s"[$c]"),
-      severity.map(s => s"<$s>"),
-      expected.map(e => s"(expected: $e)"),
-      actual.map(a => s"(got: $a)")
-    ).flatten.mkString(" ")
+    val fieldPrefix = formatFieldPath(": ")
+    val extras = formatExtras
     val baseLine = s"$pad$fieldPrefix$message $extras".trim
     if (children.isEmpty) baseLine
     else {
