@@ -174,7 +174,6 @@ class ValidationSpec extends FunSuite {
     assertEquals(exception.error.message, "fail")
   }
 
-
   // --- Macro Derivation Tests ---
 
   test("Macro Derivation - should validate a complex nested case class successfully") {
@@ -293,15 +292,19 @@ class ValidationSpec extends FunSuite {
     assert(formatted.contains("(got: -1)"))
   }
 
-  test("ValidationError API - prettyPrint should format error with indentation") {
+  test("ValidationError API - prettyPrint should format error with correct indentation") {
     val childError = ValidationError("Child error")
     val parentError = ValidationError(
       message = "Parent error",
       children = Vector(childError)
     )
     val formatted = parentError.prettyPrint()
-    assert(formatted.contains("Parent error"))
-    assert(formatted.contains("  Child error"))
+
+    val expectedOutput =
+      """Parent error
+        |Child error""".stripMargin.replaceAll("\r\n", "\n")
+
+    assertEquals(formatted, expectedOutput)
   }
 
   test("ValidationError API - annotateField should add field context") {
