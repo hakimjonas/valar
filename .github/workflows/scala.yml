@@ -126,7 +126,189 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch full history for dynver/release notes
+# Workflow name
+name: Scala CI and GitHub Release
 
+# Trigger conditions
+on:
+  push:
+    branches:
+      - main # Run on pushes to main
+    tags:
+      - 'v*' # Run on pushes to version tags (e.g., v0.2.0)
+  pull_request:
+    branches:
+      - main # Run on pull requests targeting main
+
+# Default permissions for the workflow token
+permissions:
+  contents: read # Read access to checkout code
+  id-token: write # Needed for GPG key import action
+
+jobs:
+  # Build job: compile, test, check format, check docs, package artifacts
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for actions/upload-artifact
+    outputs:
+      # Output artifact names for the publish job
+      jar_filename: ${{ steps.set_paths.outputs.jar_filename }}
+      pom_filename: ${{ steps.set_paths.outputs.pom_filename }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for dynver/release notes if needed
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt' # Cache sbt dependencies
+
+      - name: Set up sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Check format and linting
+        run: sbt check
+
+      - name: Run JVM tests
+        run: sbt valarJVM/test
+
+      - name: Compile Native code
+        run: sbt valarNative/compile
+
+      # --- Check documentation compilation ---
+      - name: Check documentation (mdoc)
+        # Verifies that code snippets in docs compile
+        # Pass arguments to the mdoc task within quotes for sbt
+        run: sbt "mdoc --check" #
+
+      - name: Package artifact and generate POM
+        # Creates the JAR and POM files needed for publishing
+        run: |
+          sbt clean valarJVM/package valarJVM/makePom
+
+      - name: Set artifact paths and names
+        # Dynamically find the generated JAR and POM to handle different Scala versions
+        id: set_paths
+        run: |
+          SCALA_VERSION_DIR=$(find valarJVM/target -maxdepth 1 -type d -name "scala-*" | head -n1)
+          if [ -z "$SCALA_VERSION_DIR" ]; then
+            echo "Error: Scala version directory not found in target!"
+            exit 1
+          fi
+          echo "Found Scala dir: $SCALA_VERSION_DIR"
+
+          # Find main JAR file (excluding sources/javadoc)
+          JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -n1)
+          if [ ! -f "$JAR_PATH" ]; then
+            echo "Error: Main JAR artifact not found in $SCALA_VERSION_DIR!"
+            exit 1
+          fi
+          JAR_FILENAME=$(basename "$JAR_PATH")
+          echo "JAR Filename: $JAR_FILENAME"
+
+          # Find POM file
+          POM_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*.pom" | head -n1)
+          if [ ! -f "$POM_PATH" ]; then
+            echo "Error: POM file not found in $SCALA_VERSION_DIR!"
+            exit 1
+          fi
+          POM_FILENAME=$(basename "$POM_PATH")
+          echo "POM Filename: $POM_FILENAME"
+
+          # Set outputs for use in other jobs/steps
+          echo "jar_filename=$JAR_FILENAME" >> "$GITHUB_OUTPUT"
+          echo "pom_filename=$POM_FILENAME" >> "$GITHUB_OUTPUT"
+
+          # Prepare staging directory for artifact upload
+          mkdir -p staging
+          cp "$JAR_PATH" staging/
+          cp "$POM_PATH" staging/
+          # Also copy sources and javadoc jars if they exist (required by Sonatype)
+          SOURCES_JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*-sources.jar" | head -n1)
+          if [ -f "$SOURCES_JAR_PATH" ]; then cp "$SOURCES_JAR_PATH" staging/; fi
+          JAVADOC_JAR_PATH=$(find "$SCALA_VERSION_DIR" -maxdepth 1 -type f -name "valar*-javadoc.jar" | head -n1)
+          if [ -f "$JAVADOC_JAR_PATH" ]; then cp "$JAVADOC_JAR_PATH" staging/; fi
+          echo "Contents of staging:"
+          ls -l staging
+
+      - name: Upload artifacts for publish job
+        # Uploads JAR, POM, sources JAR, javadoc JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts # Simplified name
+          path: staging/
+          retention-days: 1 # Keep artifacts for 1 day
+
+  # Publish job: Runs only on tag pushes, publishes to Sonatype, creates GitHub release
+  publish:
+    if: startsWith(github.ref, 'refs/tags/') # Only run on tags like v0.2.0
+    needs: build # Depends on the build job succeeding
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for dynver/release notes
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'sbt'
+
+      - name: Set up sbt launcher
+        uses: sbt/setup-sbt@v1
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.PGP_SECRET }}
+          passphrase: ${{ secrets.PGP_PASSPHRASE }}
+
+      - name: Debug Secrets Availability
+        run: |
+          echo "Checking SONATYPE_USERNAME..."
+          if [ -z "$SONATYPE_USERNAME" ]; then 
+            echo "SONATYPE_USERNAME is empty or not set in the environment."
+          else 
+            echo "SONATYPE_USERNAME is SET in the environment."
+          fi
+          echo "Checking SONATYPE_PASSWORD..."
+          if [ -z "$SONATYPE_PASSWORD" ]; then 
+            echo "SONATYPE_PASSWORD is empty or not set in the environment."
+          else 
+            echo "SONATYPE_PASSWORD is SET in the environment."
+          fi
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+
+      # --- ADDED: Publish to Sonatype and create GitHub Release ---
+      - name: Publish release
+        # It typically handles:
+        # - PGP signing (using sbt-pgp settings, finds key via GPG agent)
+        # - Publishing artifacts (JAR, sources, javadoc, POM, signatures)
+        # - Staging the release on Sonatype
+        # - Closing and releasing the staging repository on Sonatype
+        # - Creating a GitHub Release for the tag
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Passphrase for GPG key
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # Sonatype password/token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token for creating GitHub release
+        run: sbt +publishSigned sonatypeCentralUpload
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
