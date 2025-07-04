@@ -36,17 +36,11 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
-// SemanticDB for Scalafix
-ThisBuild / semanticdbEnabled := true
-ThisBuild / semanticdbIncludeInJar := true
-ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-
 // ===== Project Definition =====
 // Cross-platform project definition (JVM and Native)
 lazy val valar = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure) // Same sources for both platforms
   .in(file("."))
-  .enablePlugins(MdocPlugin, SbtPgp)
   .settings(
     name := "valar",
 
@@ -55,7 +49,33 @@ lazy val valar = crossProject(JVMPlatform, NativePlatform)
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
 
-    // Documentation (mdoc)
+    // Aliases for formatting & linting (only apply to JVM)
+    addCommandAlias("prepare", "valarJVM/scalafixAll; valarJVM/scalafmtAll; scalafmtSbt"),
+    addCommandAlias("check", "valarJVM/scalafixAll --check; valarJVM/scalafmtCheckAll; scalafmtSbtCheck"),
+    addCommandAlias("fix", "valarJVM/scalafixAll"),
+    addCommandAlias("fixCheck", "valarJVM/scalafixAll --check"),
+    addCommandAlias("fmt", "valarJVM/scalafmtAll; scalafmtSbt"),
+    addCommandAlias("fmtCheck", "valarJVM/scalafmtCheckAll; scalafmtSbtCheck")
+  )
+  .jvmSettings(
+    // JVM-specific settings - keep specs2
+    libraryDependencies ++= Seq(
+      "org.specs2" %% "specs2-core" % "5.6.4" % Test,
+      "org.specs2" %% "specs2-matcher-extra" % "5.6.4" % Test
+    ),
+
+    // SemanticDB for Scalafix - ONLY for JVM platform
+    semanticdbEnabled := true,
+    semanticdbIncludeInJar := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+
+    // JVM testing settings
+    Test / fork := true,
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+  )
+  .jvmConfigure(_.enablePlugins(MdocPlugin, SbtPgp))
+  .jvmSettings(
+    // Documentation (mdoc) - only for JVM
     mdocIn := file("docs-src"),
     mdocOut := file("docs"),
     mdocExtraArguments := Seq(
@@ -63,38 +83,22 @@ lazy val valar = crossProject(JVMPlatform, NativePlatform)
       (ThisBuild / baseDirectory).value.toString,
       "--include",
       "README.md"
-    ),
-
-    // Aliases for formatting & linting
-    addCommandAlias("prepare", "fix; fmt"),
-    addCommandAlias("check", "+fixCheck; +fmtCheck"),
-    addCommandAlias("fix", "scalafixAll"),
-    addCommandAlias("fixCheck", "scalafixAll --check"),
-    addCommandAlias("fmt", "+scalafmtSbt; +scalafmtAll"),
-    addCommandAlias("fmtCheck", "+scalafmtSbtCheck; +scalafmtCheckAll")
-  )
-  .jvmSettings(
-    // JVM-specific settings
-    libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "5.6.4" % Test,
-      "org.specs2" %% "specs2-matcher-extra" % "5.6.4" % Test
-    ),
-
-    // JVM testing settings
-    Test / fork := true,
-    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+    )
   )
   .nativeSettings(
-    // Native-specific settings
+    // Native-specific settings - use uTest
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "utest" % "0.8.4" % Test
+    ),
+    testFrameworks += new TestFramework("utest.runner.Framework"),
     nativeConfig ~= { c =>
       c.withLTO(scala.scalanative.build.LTO.thin)
         .withMode(scala.scalanative.build.Mode.releaseFast)
         .withGC(scala.scalanative.build.GC.immix)
     },
 
-    // Native testing settings - disable tests on Native platform for now
-    Test / fork := false,
-    Test / sources := Seq.empty  // Disable tests on Native platform
+    // Native testing settings
+    Test / fork := false
   )
 
 // Convenience aliases for platform-specific commands
