@@ -213,13 +213,13 @@ class ValidationSpec extends FunSuite {
 
   test("Helpers - optionValidator with errorOnEmpty=false should allow null/None") {
     val validator = (s: String) => nonEmpty(s)
-    val result = optionValidator[String](null, validator, errorOnEmpty = false)
+    val result = optionValidator[String](Option.empty[String].orNull, validator, errorOnEmpty = false)
     assertEquals(result, ValidationResult.Valid(None))
   }
 
   test("Helpers - optionValidator with errorOnEmpty=true should reject null/None") {
     val validator = (s: String) => nonEmpty(s)
-    val result = optionValidator[String](null, validator, errorOnEmpty = true)
+    val result = optionValidator[String](Option.empty[String].orNull, validator, errorOnEmpty = true)
     result match {
       case ValidationResult.Invalid(errors) =>
         assertEquals(errors.size, 1)
@@ -231,7 +231,8 @@ class ValidationSpec extends FunSuite {
   test("Helpers - optionValidator with errorOnEmpty=true should use custom error message") {
     val customMsg = "Custom error for empty value"
     val validator = (s: String) => nonEmpty(s)
-    val result = optionValidator[String](null, validator, errorOnEmpty = true, emptyErrorMsg = customMsg)
+    val result =
+      optionValidator[String](Option.empty[String].orNull, validator, errorOnEmpty = true, emptyErrorMsg = customMsg)
     result match {
       case ValidationResult.Invalid(errors) =>
         assertEquals(errors.size, 1)
