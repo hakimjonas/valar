@@ -36,71 +36,66 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
-// ===== Project Definition =====
-// Cross-platform project definition (JVM and Native)
-lazy val valar = crossProject(JVMPlatform, NativePlatform)
-  .crossType(CrossType.Pure) // Same sources for both platforms
-  .in(file("."))
+// ===== Project Definitions =====
+
+lazy val root = (project in file("."))
+  .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
   .settings(
-    name := "valar",
+    name := "valar-root",
+    publish / skip := true,
+    addCommandAlias("prepare", "valarCoreJVM/scalafixAll; valarCoreJVM/scalafmtAll; scalafmtSbt"),
+    addCommandAlias("check", "valarCoreJVM/scalafixAll --check; valarCoreJVM/scalafmtCheckAll; scalafmtSbtCheck")
+  )
 
-    // Common settings for both platforms
-    // sbt-pgp signing configuration
+// 1. The Core Library Module
+lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("valar-core"))
+  .settings(
+    name := "valar-core",
+    // Add MUnit as a Test dependency for internal testing
+    libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1" % Test,
     usePgpKeyHex("9614A0CE1CE76975"),
-    useGpgAgent := true,
-
-    // Aliases for formatting & linting (only apply to JVM)
-    addCommandAlias("prepare", "valarJVM/scalafixAll; valarJVM/scalafmtAll; scalafmtSbt"),
-    addCommandAlias("check", "valarJVM/scalafixAll --check; valarJVM/scalafmtCheckAll; scalafmtSbtCheck"),
-    addCommandAlias("fix", "valarJVM/scalafixAll"),
-    addCommandAlias("fixCheck", "valarJVM/scalafixAll --check"),
-    addCommandAlias("fmt", "valarJVM/scalafmtAll; scalafmtSbt"),
-    addCommandAlias("fmtCheck", "valarJVM/scalafmtCheckAll; scalafmtSbtCheck")
+    useGpgAgent := true
   )
   .jvmSettings(
-    // JVM-specific settings - keep specs2
-    libraryDependencies ++= Seq(
-      "org.specs2" %% "specs2-core" % "5.6.4" % Test,
-      "org.specs2" %% "specs2-matcher-extra" % "5.6.4" % Test
-    ),
-
-    // SemanticDB for Scalafix - ONLY for JVM platform
     semanticdbEnabled := true,
     semanticdbIncludeInJar := true,
-    semanticdbVersion := scalafixSemanticdb.revision,
-
-    // JVM testing settings
-    Test / fork := true,
-    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+    semanticdbVersion := scalafixSemanticdb.revision
   )
   .jvmConfigure(_.enablePlugins(MdocPlugin, SbtPgp))
   .jvmSettings(
-    // Documentation (mdoc) - only for JVM
     mdocIn := file("docs-src"),
-    mdocOut := file("docs"),
-    mdocExtraArguments := Seq(
-      "--out",
-      (ThisBuild / baseDirectory).value.toString,
-      "--include",
-      "README.md"
-    )
+    mdocOut := file("docs")
   )
   .nativeSettings(
-    // Native-specific settings - use uTest
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "utest" % "0.8.4" % Test
-    ),
-    testFrameworks += new TestFramework("utest.runner.Framework"),
+    // Configure MUnit as the test framework for the core module
+    testFrameworks += new TestFramework("munit.Framework"),
     nativeConfig ~= { c =>
-      c.withLTO(scala.scalanative.build.LTO.thin)
-        .withMode(scala.scalanative.build.Mode.releaseFast)
-        .withGC(scala.scalanative.build.GC.immix)
-    },
-
-    // Native testing settings
-    Test / fork := false
+      c.withLTO(LTO.thin).withMode(Mode.releaseFast).withGC(GC.immix)
+    }
   )
 
-// Convenience aliases for platform-specific commands
-lazy val valarJVM = valar.jvm
-lazy val valarNative = valar.native
+// 2. The MUnit Testing Extension Module
+lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("valar-munit"))
+  .dependsOn(valarCore)
+  .settings(
+    name := "valar-munit",
+    // MUnit is a Compile dependency for ValarSuite itself
+    libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1",
+    // This artifact IS intended for publishing
+    publish / skip := false
+  )
+  .jvmConfigure(_.enablePlugins(SbtPgp))
+  .nativeSettings(
+    // It can also have its own tests (to test ValarSuite)
+    testFrameworks += new TestFramework("munit.Framework")
+  )
+
+// Convenience aliases
+lazy val valarCoreJVM = valarCore.jvm
+lazy val valarCoreNative = valarCore.native
+lazy val valarMunitJVM = valarMunit.jvm
+lazy val valarMunitNative = valarMunit.native
