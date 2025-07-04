@@ -1,10 +1,11 @@
 package net.ghoula.valar
 
+import net.ghoula.valar
+import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
+import net.ghoula.valar.internal.MacroHelpers
+
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-
-import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
-import net.ghoula.valar.internal.{ErrorAccumulator, MacroHelpers}
 
 /** Represents the result of a validation process, either a valid value or validation errors.
   *
@@ -39,7 +40,7 @@ object ValidationResult {
 
   /** Provides the default ErrorAccumulator for Vector[ValidationError]. */
   given validationErrorAccumulator: ErrorAccumulator[Vector[ValidationError]] =
-    internal.ErrorAccumulator.vectorAccumulator[ValidationError]
+    valar.ErrorAccumulator.vectorAccumulator[ValidationError]
 
   /** Creates a [[Valid]] instance. */
   def valid[A](value: A): ValidationResult[A] = Valid(value)

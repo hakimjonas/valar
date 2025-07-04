@@ -1,17 +1,15 @@
 package net.ghoula.valar
 
+import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
+import net.ghoula.valar.ValidationHelpers.*
+import net.ghoula.valar.ValidationResult.*
+import net.ghoula.valar.Validator.deriveValidatorMacro
 import org.specs2.matcher.{Matchers, ResultMatchers, TraversableMatchers}
 import org.specs2.mutable.Specification
 
 import scala.collection.immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-
-import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
-import net.ghoula.valar.ValidationHelpers.*
-import net.ghoula.valar.ValidationResult.*
-import net.ghoula.valar.Validator.deriveValidatorMacro
-import net.ghoula.valar.internal.ErrorAccumulator
 
 object ValidationSpec extends Specification with Matchers with TraversableMatchers with ResultMatchers {
 

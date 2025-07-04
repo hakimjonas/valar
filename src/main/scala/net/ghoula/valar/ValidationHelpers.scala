@@ -1,9 +1,9 @@
 package net.ghoula.valar
 
+import net.ghoula.valar.ValidationErrors.ValidationError
+
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
-
-import net.ghoula.valar.ValidationErrors.ValidationError
 
 /** Provides reusable helper functions for common validation scenarios.
   *
