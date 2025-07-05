@@ -1,5 +1,9 @@
 # **Valar – Type-Safe Validation for Scala 3**
 
+[![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar_3?style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar_3)
+[![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
 Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
 metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
 detailed error messages useful for debugging or user feedback.
@@ -150,8 +154,8 @@ def validate(a: A): ValidationResult\[A\]
 Validators can be automatically derived for case classes using deriveValidatorMacro.  
 **Important Note on Derivation:** Automatic derivation with deriveValidatorMacro requires implicit Validator instances
 to be available in scope for **all** field types within the case class. If a validator for any field type is missing, *
-*compilation will fail**. This strictness ensures that all fields are explicitly considered during validation. See the "
-Built-in Validators" section for types supported out-of-the-box.
+*compilation will fail**. This strictness ensures that all fields are explicitly considered during validation. See the  
+"Built-in Validators" section for types supported out-of-the-box.
 
 ## **Built-in Validators**
 
@@ -190,10 +194,10 @@ Your existing validation code will continue to work without any changes.
 
 ## **Compatibility**
 
-* **Scala:** 3.4+
+* **Scala:** 3.7+
 * **Platforms:** JVM, Scala Native
-* **Dependencies:** valar-core has a Compile dependency on io.github.cquiroz:scala-java-time to provide robust,
-  cross-platform support for the java.time API.
+* **Dependencies:** valar-core has a Compile dependency on `io.github.cquiroz:scala-java-time` to provide robust,
+  cross-platform support for the `java.time` API.
 
 ## **License**
 
