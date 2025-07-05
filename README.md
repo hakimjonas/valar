@@ -424,7 +424,7 @@ namedValidator.validate(namedTuple) // Errors include field names!
 
 ## Compatibility
 
-- **Scala:** 3.4+ (recommended: 3.7+)
+- **Scala:** 3.7+ (recommended: 3.7.1) - for Scala 3.6 use v0.2.6
 - **Dependencies:** None (zero external dependencies)
 
 > **Note on Scala 3.7**: Scala 3.7 introduces changes to Givens prioritization which may affect how validators are resolved when multiple instances are available. If you define custom validators that could potentially conflict (like for type aliases or inheritance hierarchies), you may need to be more explicit about which validator to use or test thoroughly with your specific Scala version. See the [Scala documentation](https://scala-lang.org/2024/08/19/given-priority-change-3.7.html) for details.
