@@ -69,7 +69,7 @@ jobs:
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
       - name: Publish artifacts to Sonatype
-        run: sbt +publishSigned sonatypeBundleUpload
+        run: sbt +publishSigned sonatypeCentralUpload
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
