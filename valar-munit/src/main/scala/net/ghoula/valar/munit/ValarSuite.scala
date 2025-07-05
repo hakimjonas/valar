@@ -1,6 +1,7 @@
 package net.ghoula.valar.munit
 
 import munit.{FunSuite, Location}
+
 import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.ValidationResult
 
