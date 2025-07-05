@@ -2,9 +2,15 @@ package net.ghoula.valar
 
 import munit.FunSuite
 
+/** Tests the validation of tuple types, including both regular tuples and named tuples.
+  *
+  * This spec verifies that Valar can properly validate tuple structures by validating each
+  * component independently and collecting any validation errors with proper field path information
+  * for named tuples.
+  */
 class TupleValidatorSpec extends FunSuite {
 
-  // Local validators to avoid conflicts with other test files
+  /** Local validators to avoid conflicts with other test files. */
   private given localStringValidator: Validator[String] with {
     def validate(value: String): ValidationResult[String] =
       if (value.nonEmpty) ValidationResult.Valid(value)
@@ -17,10 +23,11 @@ class TupleValidatorSpec extends FunSuite {
       else ValidationResult.invalid(ValidationErrors.ValidationError("Int must be non-negative"))
   }
 
-  // Add tuple validator for regular tuples
+  /** Tuple validator for regular tuples. */
   private given tupleValidator[A, B](using va: Validator[A], vb: Validator[B]): Validator[(A, B)] =
     Validator.deriveValidatorMacro
 
+  /** Named tuple validator using automatic derivation. */
   private given namedTupleValidator: Validator[(name: String, age: Int)] =
     Validator.deriveValidatorMacro
 
@@ -36,10 +43,10 @@ class TupleValidatorSpec extends FunSuite {
     val validPerson: PersonTuple = (name = "Alice", age = 30)
     val validator = summon[Validator[PersonTuple]]
 
-    // Test valid case
+    /** Test valid case. */
     assertEquals(validator.validate(validPerson), ValidationResult.Valid(validPerson))
 
-    // Test invalid case
+    /** Test invalid case. */
     val invalidPerson: PersonTuple = (name = "", age = -10)
     validator.validate(invalidPerson) match {
       case ValidationResult.Invalid(errors) =>

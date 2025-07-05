@@ -2,6 +2,13 @@ package net.ghoula.valar
 
 import munit.FunSuite
 
+/** Tests the prioritization and scoping behavior of given instances in Valar's validation system.
+  *
+  * This spec verifies that Scala's given instance resolution works correctly with validators,
+  * including scenarios with type aliases, scoping rules, and inheritance hierarchies. It ensures
+  * that more specific validators are chosen when available and that explicit `using` clauses
+  * provide fine-grained control over validator selection.
+  */
 class GivensPrioritizationSpec extends FunSuite {
 
   test("Given prioritization should allow advanced control with 'using' clauses") {
@@ -50,7 +57,7 @@ class GivensPrioritizationSpec extends FunSuite {
       }
     }
 
-    // Test with specific validator in scope
+    /** Test with a specific validator in scope. */
     {
       import validators.userNameValidator
       val userName: UserName = "test"
@@ -61,7 +68,7 @@ class GivensPrioritizationSpec extends FunSuite {
       }
     }
 
-    // Test with general validator in scope
+    /** Test with a general validator in scope. */
     {
       import validators.generalValidator
       val userName: UserName = "test"
@@ -94,18 +101,18 @@ class GivensPrioritizationSpec extends FunSuite {
         else ValidationResult.invalid(ValidationErrors.ValidationError("Cat must have at least one life"))
     }
 
-    // Test success cases for specific types
+    /** Test success cases for specific types. */
     assertEquals(summon[Validator[Dog]].validate(Dog("Rex")), ValidationResult.Valid(Dog("Rex")))
     assertEquals(summon[Validator[Cat]].validate(Cat(9)), ValidationResult.Valid(Cat(9)))
 
-    // Test that the more general Animal validator is also found and used
+    /** Test that the more general Animal validator is also found and used. */
     val dogAsAnimal: Animal = Dog("Rex")
     assertEquals(summon[Validator[Animal]].validate(dogAsAnimal), ValidationResult.Valid(dogAsAnimal))
 
     val catAsAnimal: Animal = Cat(9)
     assertEquals(summon[Validator[Animal]].validate(catAsAnimal), ValidationResult.Valid(catAsAnimal))
 
-    // Test failure cases for specific types
+    /** Test failure cases for specific types. */
     summon[Validator[Dog]].validate(Dog("")) match {
       case ValidationResult.Invalid(errors) =>
         assert(errors.head.message.contains("Dog name cannot be empty"))
@@ -118,5 +125,4 @@ class GivensPrioritizationSpec extends FunSuite {
       case _ => fail("Expected Invalid")
     }
   }
-
 }

@@ -22,14 +22,15 @@ class ValidatorSpec extends FunSuite {
     assertEquals(validator.validate(value), ValidationResult.Valid(value))
   }
 
-  // --- Opinionated Standard Validators ---
+  /** Tests the opinionated standard validators that enforce constraints. */
 
   test("Provided validator for Int should validate non-negative numbers") {
     val validator = summon[Validator[Int]]
     assertEquals(validator.validate(10), ValidationResult.Valid(10))
     assertEquals(validator.validate(0), ValidationResult.Valid(0))
     validator.validate(-1) match {
-      case _: ValidationResult.Invalid => // Pass
+      case _: ValidationResult.Invalid =>
+      /** Expected Invalid result */
       case v => fail(s"Expected Invalid, but got $v")
     }
   }
@@ -38,7 +39,8 @@ class ValidatorSpec extends FunSuite {
     val validator = summon[Validator[Float]]
     assertEquals(validator.validate(3.14f), ValidationResult.Valid(3.14f))
     validator.validate(Float.NaN) match {
-      case _: ValidationResult.Invalid => // Pass
+      case _: ValidationResult.Invalid =>
+      /** Expected Invalid result */
       case v => fail(s"Expected Invalid, but got $v")
     }
   }
@@ -47,7 +49,8 @@ class ValidatorSpec extends FunSuite {
     val validator = summon[Validator[Double]]
     assertEquals(validator.validate(3.14d), ValidationResult.Valid(3.14d))
     validator.validate(Double.PositiveInfinity) match {
-      case _: ValidationResult.Invalid => // Pass
+      case _: ValidationResult.Invalid =>
+      /** Expected Invalid result */
       case v => fail(s"Expected Invalid, but got $v")
     }
   }
@@ -56,7 +59,8 @@ class ValidatorSpec extends FunSuite {
     val validator = summon[Validator[String]]
     assertEquals(validator.validate("hello"), ValidationResult.Valid("hello"))
     validator.validate("") match {
-      case _: ValidationResult.Invalid => // Pass
+      case _: ValidationResult.Invalid =>
+      /** Expected Invalid result */
       case v => fail(s"Expected Invalid, but got $v")
     }
   }
@@ -74,7 +78,7 @@ class ValidatorSpec extends FunSuite {
     }
   }
 
-  // --- Pass-Through Validator Tests ---
+  /** Tests the pass-through validators that accept all values of their type. */
 
   test("Pass-through validator for Boolean") { checkValidator(true) }
   test("Pass-through validator for Byte") { checkValidator(1.toByte) }

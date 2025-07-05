@@ -9,9 +9,22 @@ import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
 import net.ghoula.valar.ValidationHelpers.*
 import net.ghoula.valar.Validator.deriveValidatorMacro
 
+/** Comprehensive test suite for Valar's validation system.
+  *
+  * This spec tests all major components of the validation framework including:
+  *   - Collection validators (List, Set, Map, Array, etc.)
+  *   - Intersection type validation
+  *   - Helper function validation utilities
+  *   - Union type validation
+  *   - Error accumulation strategies
+  *   - ValidationResult extension methods
+  *   - Macro-derived validators for case classes
+  *   - Fail-fast validation operations
+  */
 class ValidationSpec extends FunSuite {
 
-  // --- Givens and Test Setup ---
+  /** Test setup with local validator instances to avoid conflicts. */
+
   private given stringValidator: Validator[String] with {
     def validate(value: String): ValidationResult[String] =
       if (value.nonEmpty) ValidationResult.Valid(value)
@@ -34,6 +47,8 @@ class ValidationSpec extends FunSuite {
     }
   }
 
+  /** Test case classes for macro derivation testing. */
+
   private case class User(name: String, age: Option[Int])
   private given Validator[User] = deriveValidatorMacro
 
@@ -46,7 +61,7 @@ class ValidationSpec extends FunSuite {
   private case class NullFieldTest(name: String, age: Int)
   private given Validator[NullFieldTest] = deriveValidatorMacro
 
-  // --- Collection Validator Tests ---
+  /** Tests for collection type validators. */
 
   test("Collection Validators - listValidator") {
     val validator = summon[Validator[List[Int]]]
@@ -113,9 +128,11 @@ class ValidationSpec extends FunSuite {
     }
   }
 
-  // --- Intersection Validator Tests ---
+  /** Tests for intersection type validation. */
+
   test("Intersection Validator - all cases") {
-    // These givens are now scoped locally to this test, resolving the ambiguity.
+
+    /** These givens are scoped locally to this test, resolving potential ambiguity. */
     trait LongerThan3 { def value: String }
     trait StartsWithA { def value: String }
     case class TestIntersection(value: String) extends LongerThan3 with StartsWithA
@@ -132,21 +149,21 @@ class ValidationSpec extends FunSuite {
 
     val validator = summon[Validator[LongerThan3 & StartsWithA]]
 
-    // Test success
+    /** Test success case. */
     assertEquals(validator.validate(TestIntersection("Amazing")), ValidationResult.Valid(TestIntersection("Amazing")))
 
-    // Test single failures
+    /** Test single failures. */
     assert(validator.validate(TestIntersection("Awe")).isInvalid)
     assert(validator.validate(TestIntersection("Brave")).isInvalid)
 
-    // Test accumulation
+    /** Test error accumulation. */
     validator.validate(TestIntersection("Bad")) match {
       case ValidationResult.Invalid(errs) => assertEquals(errs.size, 2)
       case _ => fail("Expected Invalid")
     }
   }
 
-  // --- Basic Helper Function Tests ---
+  /** Tests for basic helper function validation utilities. */
 
   test("Helpers - nonEmpty") {
     assertEquals(nonEmpty("hello"), ValidationResult.Valid("hello"))
@@ -154,10 +171,10 @@ class ValidationSpec extends FunSuite {
     assert(nonEmpty("  ").isInvalid)
   }
 
-  test("Helpers - positiveInt") {
-    assertEquals(positiveInt(5), ValidationResult.Valid(5))
-    assertEquals(positiveInt(0), ValidationResult.Valid(0))
-    assert(positiveInt(-1).isInvalid)
+  test("Helpers - nonNegativeInt") {
+    assertEquals(nonNegativeInt(5), ValidationResult.Valid(5))
+    assertEquals(nonNegativeInt(0), ValidationResult.Valid(0))
+    assert(nonNegativeInt(-1).isInvalid)
   }
 
   test("Helpers - finiteFloat") {
@@ -225,7 +242,7 @@ class ValidationSpec extends FunSuite {
     assert(optionValidator[String](Option.empty[String].orNull, validateFn, errorOnEmpty = true).isInvalid)
   }
 
-  // --- Union Validation Tests ---
+  /** Tests for union type validation. */
 
   test("Union Validation - should validate first type") {
     assertEquals(ValidationResult.validateUnion[String, Int]("hello"), ValidationResult.Valid("hello"))
@@ -239,7 +256,7 @@ class ValidationSpec extends FunSuite {
     assert(ValidationResult.validateUnion[String, Int](true).isInvalid)
   }
 
-  // --- Error Accumulation Tests ---
+  /** Tests for custom error accumulation strategies. */
 
   test("Custom Error Accumulation - should use custom accumulator") {
     given customAccumulator: ErrorAccumulator[Vector[ValidationError]] with {
@@ -253,7 +270,7 @@ class ValidationSpec extends FunSuite {
     )
   }
 
-  // --- ValidationResult Extension Method Tests ---
+  /** Tests for ValidationResult extension methods. */
 
   test("ValidationResult Extensions - all") {
     assertEquals(ValidationResult.Valid(10).map(_ * 2), ValidationResult.Valid(20))
@@ -278,7 +295,7 @@ class ValidationSpec extends FunSuite {
     assertEquals(e.getMessage, "fail")
   }
 
-  // --- Macro Derivation Tests ---
+  /** Tests for macro-derived validators. */
 
   test("Macro Derivation - success") {
     val company = Company("Acme Corp", Address("123 Main St", "Springfield", 12345), Some(User("Alice", Some(30))))
@@ -297,7 +314,7 @@ class ValidationSpec extends FunSuite {
     assert(summon[Validator[NullFieldTest]].validate(NullFieldTest(Option.empty[String].orNull, 30)).isInvalid)
   }
 
-  // --- Fail-Fast Operations ---
+  /** Tests for fail-fast validation operations. */
 
   test("Fail-Fast - zipFailFast") {
     val v1 = ValidationResult.Valid(1)
@@ -336,6 +353,7 @@ class ValidationSpec extends FunSuite {
   }
 }
 
+/** Extension methods for ValidationResult to support test assertions. */
 private implicit class ValidationResultTestOps[A](vr: ValidationResult[A]) {
   def isInvalid: Boolean = vr match {
     case _: ValidationResult.Invalid => true

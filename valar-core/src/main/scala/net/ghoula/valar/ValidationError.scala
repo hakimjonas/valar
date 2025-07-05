@@ -5,35 +5,55 @@ import scala.util.control.NoStackTrace
 /** Defines the public API for validation errors and related exceptions. */
 object ValidationErrors {
 
-  /** Represents detailed validation errors with structured information.
+  /** Represents a structured validation error with detailed context information.
     *
-    * Provides a rich error context including the specific field path, expected vs. actual values,
-    * and optional error codes and severity indicators.
+    * `ValidationError` provides comprehensive error reporting including field paths, expected vs.
+    * actual values, optional error codes, severity levels, and support for nested error
+    * hierarchies. This enables both human-readable error messages and machine-processable error
+    * handling.
     *
-    * Internally represented as [[InternalValidationError]]. This prevents users from directly
-    * constructing or pattern matching on the internal representation, ensuring API stability. Use
-    * the methods on the companion object or extensions to interact with errors.
+    * '''Implementation Note''': This is an opaque type wrapping [[InternalValidationError]] to
+    * ensure API stability. Users cannot directly construct or pattern match on the internal
+    * representation - instead, use the factory methods in the companion object and the extension
+    * methods for access.
     *
-    * @param message
-    *   human-readable error message
-    * @param fieldPath
-    *   path to the problematic field in nested objects
-    * @param children
-    *   nested child errors, useful for aggregating errors from complex objects
-    * @param code
-    *   optional application-specific error code
-    * @param severity
-    *   optional severity level (`Error`, `Warning`)
-    * @param expected
-    *   description of the expected format or value
-    * @param actual
-    *   description of the actual problematic value
+    * '''Error Hierarchies''': Errors can contain child errors, making it possible to represent
+    * complex validation failures in nested data structures while preserving the full context of
+    * where each failure occurred.
+    *
+    * @example
+    *   {{{ // Create a simple validation error val error = ValidationError( message = "Value must
+    *   be positive", expected = Some("> 0"), actual = Some("-5") )
+    *
+    * // Create a nested error for a field val fieldError = ValidationError.nestField("age",
+    * Vector(error))
+    *
+    * // Access error details println(error.message) // "Value must be positive"
+    * println(error.prettyPrint()) // Multi-line formatted output }}}
     */
   opaque type ValidationError = InternalValidationError
 
   object ValidationError {
 
-    /** Constructs a new `ValidationError`. Use this factory method to create base errors. */
+    /** Creates a new `ValidationError` with the specified details.
+      *
+      * @param message
+      *   Human-readable description of the validation failure
+      * @param fieldPath
+      *   Path to the field in nested structures (e.g., List("user", "address", "street"))
+      * @param children
+      *   Nested validation errors from child fields or elements
+      * @param code
+      *   Optional application-specific error code for programmatic handling
+      * @param severity
+      *   Optional severity level (e.g., "Error", "Warning")
+      * @param expected
+      *   Description of what was expected (e.g., "positive number", "valid email format")
+      * @param actual
+      *   Description of the actual problematic value
+      * @return
+      *   A new `ValidationError` instance
+      */
     def apply(
       message: String,
       fieldPath: List[String] = Nil,
@@ -45,11 +65,33 @@ object ValidationErrors {
     ): ValidationError =
       InternalValidationError(message, fieldPath, children, code, severity, expected, actual)
 
-    /** Constructs a nested error for a specific field, wrapping existing errors as children. */
+    /** Creates a field-level error that wraps child validation errors.
+      *
+      * This is typically used when validating nested structures to indicate which field contained
+      * the validation failures. The field name becomes part of the error path.
+      *
+      * @param field
+      *   Name of the field that failed validation
+      * @param errors
+      *   Child errors that occurred within this field
+      * @return
+      *   A `ValidationError` representing the field-level failure
+      */
     def nestField(field: String, errors: Vector[ValidationError]): ValidationError =
       InternalValidationError.nestField(field, errors.map(_.internal))
 
-    /** Creates a simple error message for a failed union type validation. */
+    /** Creates a validation error for union type failures.
+      *
+      * Used when a value doesn't match any of the expected types in a union type validation.
+      * Provides a clear summary of what types were expected.
+      *
+      * @param value
+      *   The value that failed validation
+      * @param types
+      *   The expected types (as strings)
+      * @return
+      *   A `ValidationError` describing the union type failure
+      */
     def unionError(value: Any, types: String*): ValidationError = {
       val expected = types.mkString(" | ")
       ValidationError(
@@ -60,22 +102,41 @@ object ValidationErrors {
     }
   }
 
-  /** Extension methods for the opaque `ValidationError` type, providing the public API for
-    * accessing error details and formatting.
+  /** Extension methods providing the public API for `ValidationError`.
+    *
+    * These methods allow access to error details and provide various formatting options while
+    * maintaining the opacity of the underlying implementation.
     */
   extension (ve: ValidationError) {
 
-    /** Accesses the internal representation. Restricted to the library package `net.ghoula.valar`.
-      */
+    /** Provides access to the internal representation (restricted to library internals). */
     private[valar] def internal: InternalValidationError = ve
 
-    /** Provides a compact, single-line string representation. */
+    /** Returns a compact, single-line string representation of the error. */
     def show: String = internal.show
 
-    /** Provides a multi-line, indented string representation. */
+    /** Returns a formatted, multi-line string representation with indentation.
+      *
+      * @param indent
+      *   Number of spaces to indent (useful for nested display)
+      * @return
+      *   Pretty-printed error with child errors indented
+      */
     def prettyPrint(indent: Int = 0): String = internal.prettyPrint(indent)
 
-    /** Annotates an existing error with the context of the field it belongs to. */
+    /** Adds field context to an existing error.
+      *
+      * This method is used to annotate errors with information about which field they occurred in
+      * and what type that field was expected to be. The field name is prepended to the existing
+      * field path.
+      *
+      * @param field
+      *   The name of the field
+      * @param fieldType
+      *   The expected type of the field
+      * @return
+      *   A new `ValidationError` with updated context
+      */
     def annotateField(field: String, fieldType: String): ValidationError = {
       val internalError = ve.internal
       InternalValidationError(
@@ -89,26 +150,43 @@ object ValidationErrors {
       )
     }
 
+    /** Accessor methods for retrieving error properties.
+      *
+      * These methods provide read-only access to the various components of a validation error,
+      * allowing inspection of error details for logging, debugging, or programmatic error handling.
+      */
     def message: String = internal.message
     def fieldPath: List[String] = internal.fieldPath
-    def children: Vector[ValidationError] =
-      internal.children.map(identity)
+    def children: Vector[ValidationError] = internal.children.map(identity)
     def code: Option[String] = internal.code
     def severity: Option[String] = internal.severity
     def expected: Option[String] = internal.expected
     def actual: Option[String] = internal.actual
   }
 
-  /** An Exception specifically for wrapping a [[ValidationError]]. Uses NoStackTrace. */
+  /** Exception that wraps a `ValidationError` for integration with exception-based error handling.
+    *
+    * This exception uses `NoStackTrace` for performance, as validation errors typically don't need
+    * stack traces - the `ValidationError` itself contains the relevant context.
+    *
+    * @param error
+    *   The underlying validation error
+    */
   final class ValidationException(val error: ValidationError) extends Exception(error.show) with NoStackTrace {
 
-    /** Retrieves the underlying [[ValidationError]]. */
+    /** Retrieves the underlying `ValidationError`.
+      *
+      * @return
+      *   The wrapped validation error
+      */
     def getValidationError: ValidationError = error
   }
 }
 
-/** Internal representation of a validation error, hidden by the opaque type
-  * [[ValidationErrors.ValidationError]].
+/** Internal representation of a validation error.
+  *
+  * This case class is hidden behind the opaque `ValidationError` type to ensure API stability.
+  * Users should not interact with this class directly.
   */
 private[valar] final case class InternalValidationError(
   message: String,
@@ -127,7 +205,7 @@ private[valar] final case class InternalValidationError(
   def nest(childErrors: Vector[InternalValidationError]): InternalValidationError =
     copy(children = children ++ childErrors)
 
-  /** Helper method to format the extras (code, severity, expected, actual) */
+  /** Formats optional metadata (code, severity, expected, actual) for display. */
   private def formatExtras: String = {
     List(
       code.map(c => s"[$c]"),
@@ -137,12 +215,18 @@ private[valar] final case class InternalValidationError(
     ).flatten.mkString(" ")
   }
 
-  /** Helper method to format the field path */
+  /** Formats the field path for display.
+    *
+    * @param separator
+    *   String to append after the path (e.g., ": " or " -> ")
+    * @return
+    *   Formatted field path or empty string if no path
+    */
   private def formatFieldPath(separator: String): String = {
     if (fieldPath.isEmpty) "" else s"${fieldPath.reverse.mkString(".")}$separator"
   }
 
-  /** Compact, single-line representation. */
+  /** Returns a compact, single-line representation. */
   def show: String = {
     val path = formatFieldPath(": ")
     val extras = formatExtras
@@ -150,7 +234,7 @@ private[valar] final case class InternalValidationError(
     s"$path$message $extras$childMessages".trim
   }
 
-  /** Pretty-printed, multi-line representation with indentation. */
+  /** Returns a formatted, multi-line representation with indentation. */
   def prettyPrint(indent: Int = 0): String = {
     val pad = " " * indent
     val fieldPrefix = formatFieldPath(": ")
@@ -164,10 +248,18 @@ private[valar] final case class InternalValidationError(
   }
 }
 
-/** Companion object for [[InternalValidationError]]. */
+/** Companion object for `InternalValidationError`. */
 private[valar] object InternalValidationError {
 
-  /** Creates a standard error message format for a field containing nested errors. */
+  /** Creates a field-level error with nested children.
+    *
+    * @param field
+    *   The field name
+    * @param errors
+    *   Child errors within this field
+    * @return
+    *   A field-level error containing the children
+    */
   def nestField(field: String, errors: Vector[InternalValidationError]): InternalValidationError =
     InternalValidationError(s"Invalid field: $field", fieldPath = List(field), children = errors)
 }

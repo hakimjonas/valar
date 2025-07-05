@@ -21,7 +21,6 @@ jobs:
           java-version: '17'
           cache: 'sbt'
 
-      # This step was missing
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 

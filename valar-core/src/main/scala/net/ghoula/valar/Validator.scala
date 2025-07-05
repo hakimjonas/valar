@@ -40,9 +40,9 @@ object Validator {
   /** Summons an implicit [[Validator]] instance for type `A`. */
   def apply[A](using v: Validator[A]): Validator[A] = v
 
-  /** Validates that an Int is non-negative (>= 0). Uses [[ValidationHelpers.positiveInt]]. */
-  given positiveIntValidator: Validator[Int] with {
-    def validate(i: Int): ValidationResult[Int] = positiveInt(i)
+  /** Validates that an Int is non-negative (>= 0). Uses [[ValidationHelpers.nonNegativeInt]]. */
+  given nonNegativeIntValidator: Validator[Int] with {
+    def validate(i: Int): ValidationResult[Int] = nonNegativeInt(i)
   }
 
   /** Validates that a Float is finite (not NaN or infinite). Uses
@@ -207,8 +207,7 @@ object Validator {
     }
   }
 
-  /** Helper method for validating iterable collections and building results. This eliminates
-    * duplication between collection validators.
+  /** Helper method for validating iterable collections and building results.
     */
   private def validateIterable[A, C[_]](
     xs: Iterable[A],
