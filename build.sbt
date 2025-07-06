@@ -44,12 +44,10 @@ ThisBuild / scalacOptions ++= Seq(
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
 // ===== Shared Settings =====
-// CORRECTED: Concatenate the sonatypeSettings sequence with other settings.
-lazy val publishSettings: Seq[sbt.Def.Setting[?]] =
-  sonatypeSettings ++ Seq(
-    usePgpKeyHex("9614A0CE1CE76975"),
-    useGpgAgent := true
-  )
+lazy val pgpSettings = Seq(
+  usePgpKeyHex("9614A0CE1CE76975"),
+  useGpgAgent := true
+)
 
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
@@ -62,8 +60,8 @@ lazy val root = (project in file("."))
 lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-core"))
-  .settings(publishSettings)
   .settings(
+    // All settings are now in a single block
     name := "valar-core",
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
@@ -71,6 +69,8 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
       "org.scalameta" %%% "munit" % "1.1.1" % Test
     )
   )
+  .settings(sonatypeSettings) // Apply Sonatype settings
+  .settings(pgpSettings) // Apply PGP settings
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
@@ -89,11 +89,13 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-munit"))
   .dependsOn(valarCore)
-  .settings(publishSettings)
   .settings(
+    // All settings are now in a single block
     name := "valar-munit",
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
+  .settings(sonatypeSettings) // Apply Sonatype settings
+  .settings(pgpSettings) // Apply PGP settings
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
