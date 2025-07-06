@@ -40,6 +40,9 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
+// ===== Global Sonatype Settings =====
+ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
+
 // ===== Shared Settings =====
 lazy val commonPublishSettings = Seq(
   sonatypeCredentialHost := "central.sonatype.com",
@@ -53,7 +56,9 @@ lazy val root = (project in file("."))
   .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
   .settings(
     name := "valar-root",
-    publish / skip := true
+    publish / skip := true,
+    // Add sonatype settings to root project for sonatypeCentralUpload
+    sonatypeCredentialHost := "central.sonatype.com"
   )
 
 // 1. The Core Library Module
