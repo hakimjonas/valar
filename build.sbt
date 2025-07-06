@@ -3,13 +3,11 @@ import xerial.sbt.Sonatype.autoImport.*
 import xerial.sbt.Sonatype.{sonatypeCentralHost, sonatypeSettings}
 enablePlugins(SbtPgp)
 
+import _root_.mdoc.MdocPlugin
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
 
 import scala.scalanative.build.*
-
-// mdoc documentation plugin
-import _root_.mdoc.MdocPlugin
 
 // ===== Build‑wide Settings =====
 ThisBuild / organization := "net.ghoula"
@@ -19,6 +17,7 @@ ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 // ===== Publishing Settings =====
+// CORRECTED: These settings correctly target the new Sonatype Central Portal.
 ThisBuild / sonatypeRepository := sonatypeCentralHost
 ThisBuild / sonatypeProfileName := "net.ghoula"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
@@ -61,7 +60,8 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-core"))
   .settings(
-    // All settings are now in a single block
+    sonatypeSettings,
+    pgpSettings,
     name := "valar-core",
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
@@ -69,8 +69,6 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
       "org.scalameta" %%% "munit" % "1.1.1" % Test
     )
   )
-  .settings(sonatypeSettings) // Apply Sonatype settings
-  .settings(pgpSettings) // Apply PGP settings
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
@@ -89,13 +87,13 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-munit"))
   .dependsOn(valarCore)
+  // CORRECTED: All settings are combined into a single .settings() block
   .settings(
-    // All settings are now in a single block
+    sonatypeSettings,
+    pgpSettings,
     name := "valar-munit",
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
-  .settings(sonatypeSettings) // Apply Sonatype settings
-  .settings(pgpSettings) // Apply PGP settings
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
