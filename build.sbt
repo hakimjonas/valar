@@ -5,6 +5,7 @@ enablePlugins(SbtPgp)
 
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
+
 import scala.scalanative.build.*
 
 // mdoc documentation plugin
@@ -42,12 +43,6 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
-// ===== Shared Settings =====
-lazy val pgpSettings = Seq(
-  usePgpKeyHex("9614A0CE1CE76975"),
-  useGpgAgent := true
-)
-
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
   .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
@@ -59,16 +54,17 @@ lazy val root = (project in file("."))
 lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-core"))
+  .settings(sonatypeSettings *)
   .settings(
     name := "valar-core",
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true,
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
       "org.scalameta" %%% "munit" % "1.1.1" % Test
     )
   )
-  .settings(sonatypeSettings)
-  .settings(pgpSettings)
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
@@ -87,12 +83,13 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-munit"))
   .dependsOn(valarCore)
+  .settings(sonatypeSettings *)
   .settings(
     name := "valar-munit",
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true,
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
-  .settings(sonatypeSettings)
-  .settings(pgpSettings) // Apply PGP settings to this module
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
