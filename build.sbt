@@ -1,6 +1,6 @@
 // ===== Imports =====
 import xerial.sbt.Sonatype.autoImport.*
-import xerial.sbt.Sonatype.sonatypeCentralHost
+import xerial.sbt.Sonatype.{sonatypeCentralHost, sonatypeSettings}
 enablePlugins(SbtPgp)
 
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
@@ -43,6 +43,14 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
+// ===== Shared Settings =====
+// CORRECTED: Concatenate the sonatypeSettings sequence with other settings.
+lazy val publishSettings: Seq[sbt.Def.Setting[?]] =
+  sonatypeSettings ++ Seq(
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true
+  )
+
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
   .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
@@ -54,15 +62,14 @@ lazy val root = (project in file("."))
 lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-core"))
+  .settings(publishSettings)
   .settings(
     name := "valar-core",
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
       "org.scalameta" %%% "munit" % "1.1.1" % Test
-    ),
-    usePgpKeyHex("9614A0CE1CE76975"),
-    useGpgAgent := true
+    )
   )
   .jvmSettings(
     mdocIn := file("docs-src"),
@@ -82,6 +89,7 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-munit"))
   .dependsOn(valarCore)
+  .settings(publishSettings)
   .settings(
     name := "valar-munit",
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
