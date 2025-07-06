@@ -1,10 +1,10 @@
 // Sonatype settings
-import xerial.sbt.Sonatype.sonatypeCentralHost
 enablePlugins(SbtPgp)
 
 // Import for cross-platform builds
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
+
 import scala.scalanative.build.*
 
 // mdoc documentation plugin
@@ -15,7 +15,7 @@ ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.7.1"
 
-// Enable SemanticDB for all subprojects, required by Scalafix
+// Enable SemanticDB for all subprojects required by Scalafix
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
@@ -42,7 +42,7 @@ ThisBuild / javacOptions ++= Seq("--release", "17")
 
 // ===== Shared Settings =====
 lazy val commonPublishSettings = Seq(
-  sonatypeCredentialHost := sonatypeCentralHost,
+  sonatypeCredentialHost := "central.sonatype.com",
   publishTo := sonatypePublishToBundle.value,
   usePgpKeyHex("9614A0CE1CE76975"),
   useGpgAgent := true
