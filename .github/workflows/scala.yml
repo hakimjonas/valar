@@ -36,10 +36,10 @@ jobs:
       - name: Check documentation (mdoc)
         run: sbt "valarCoreJVM/mdoc --check"
 
+  # Publish job: Runs only on tag pushes, publishes to Sonatype, creates GitHub release
   publish:
-    name: Publish Release
-    needs: [ build ]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') # Only run on tags like v0.2.0
+    needs: build # Depends on the build job succeeding
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,7 +49,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch full history for dynver/release notes
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -58,19 +58,47 @@ jobs:
           java-version: '17'
           cache: 'sbt'
 
-      - name: Set up sbt
+      - name: Set up sbt launcher
         uses: sbt/setup-sbt@v1
 
       - name: Import GPG key
+        id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.PGP_SECRET }}
           passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
-      - name: Publish artifacts to Sonatype
-        run: sbt +publishSigned sonatypeCentralUpload
+      - name: Debug Secrets Availability
+        run: |
+          echo "Checking SONATYPE_USERNAME..."
+          if [ -z "$SONATYPE_USERNAME" ]; then 
+            echo "SONATYPE_USERNAME is empty or not set in the environment."
+          else 
+            echo "SONATYPE_USERNAME is SET in the environment."
+          fi
+          echo "Checking SONATYPE_PASSWORD..."
+          if [ -z "$SONATYPE_PASSWORD" ]; then 
+            echo "SONATYPE_PASSWORD is empty or not set in the environment."
+          else 
+            echo "SONATYPE_PASSWORD is SET in the environment."
+          fi
         env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
+      # --- ADDED: Publish to Sonatype and create GitHub Release ---
+      - name: Publish release
+        # It typically handles:
+        # - PGP signing (using sbt-pgp settings, finds key via GPG agent)
+        # - Publishing artifacts (JAR, sources, javadoc, POM, signatures)
+        # - Staging the release on Sonatype
+        # - Closing and releasing the staging repository on Sonatype
+        # - Creating a GitHub Release for the tag
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Passphrase for GPG key
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # Sonatype password/token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token for creating GitHub release
+        run: sbt +publishSigned sonatypeCentralUpload

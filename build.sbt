@@ -3,9 +3,9 @@ import xerial.sbt.Sonatype.sonatypeCentralHost
 enablePlugins(SbtPgp)
 
 // Import for cross-platform builds
-import scala.scalanative.build.*
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
+import scala.scalanative.build.*
 
 // mdoc documentation plugin
 import _root_.mdoc.MdocPlugin
@@ -42,8 +42,8 @@ ThisBuild / javacOptions ++= Seq("--release", "17")
 
 // ===== Shared Settings =====
 lazy val commonPublishSettings = Seq(
-  publishTo := sonatypePublishTo.value,
   sonatypeCredentialHost := sonatypeCentralHost,
+  publishTo := sonatypePublishToBundle.value,
   usePgpKeyHex("9614A0CE1CE76975"),
   useGpgAgent := true
 )
