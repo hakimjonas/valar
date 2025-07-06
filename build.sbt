@@ -1,7 +1,8 @@
-// Sonatype settings
+// ===== Imports =====
+import xerial.sbt.Sonatype.autoImport.*
+import xerial.sbt.Sonatype.sonatypeCentralHost
 enablePlugins(SbtPgp)
 
-// Import for cross-platform builds
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
 
@@ -14,13 +15,15 @@ import _root_.mdoc.MdocPlugin
 ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / scalaVersion := "3.7.1"
-
-// Enable SemanticDB for all subprojects required by Scalafix
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
-ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
+// ===== Publishing Settings =====
+ThisBuild / sonatypeRepository := sonatypeCentralHost
+ThisBuild / sonatypeProfileName := "net.ghoula"
+ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
+ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 ThisBuild / developers := List(
   Developer("hakimjonas", "Hakim Jonas Ghoula", "hakim@ghoula.net", url("https://github.com/hakimjonas"))
 )
@@ -28,7 +31,7 @@ ThisBuild / scmInfo := Some(
   ScmInfo(url("https://github.com/hakimjonas/valar"), "scm:git@github.com:hakimjonas/valar.git")
 )
 
-// Compiler options, including the one required by Scalafix's OrganizeImports
+// ===== Compiler Settings =====
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
@@ -40,28 +43,14 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
-// ===== Global Sonatype Settings =====
-ThisBuild / sonatypeCredentialHost := "central.sonatype.com"
-
-// ===== Shared Settings =====
-lazy val commonPublishSettings = Seq(
-  sonatypeCredentialHost := "central.sonatype.com",
-  publishTo := sonatypePublishToBundle.value,
-  usePgpKeyHex("9614A0CE1CE76975"),
-  useGpgAgent := true
-)
-
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
   .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
   .settings(
     name := "valar-root",
-    publish / skip := true,
-    // Add sonatype settings to root project for sonatypeCentralUpload
-    sonatypeCredentialHost := "central.sonatype.com"
+    publish / skip := true
   )
 
-// 1. The Core Library Module
 lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-core"))
@@ -71,9 +60,10 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
       "org.scalameta" %%% "munit" % "1.1.1" % Test
-    )
+    ),
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true
   )
-  .settings(commonPublishSettings)
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
@@ -88,22 +78,19 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     }
   )
 
-// 2. The MUnit Testing Extension Module
 lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-munit"))
   .dependsOn(valarCore)
   .settings(
     name := "valar-munit",
-    libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1",
-    publish / skip := false
+    libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
-  .settings(commonPublishSettings)
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
 
-// Convenience aliases
+// ===== Convenience Aliases =====
 lazy val valarCoreJVM = valarCore.jvm
 lazy val valarCoreNative = valarCore.native
 lazy val valarMunitJVM = valarMunit.jvm
