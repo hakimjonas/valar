@@ -5,7 +5,6 @@ enablePlugins(SbtPgp)
 
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
-
 import scala.scalanative.build.*
 
 // mdoc documentation plugin
@@ -22,6 +21,7 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 ThisBuild / sonatypeRepository := sonatypeCentralHost
 ThisBuild / sonatypeProfileName := "net.ghoula"
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
+ThisBuild / publishTo := sonatypePublishToBundle.value
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 ThisBuild / homepage := Some(url("https://github.com/hakimjonas/valar"))
 ThisBuild / developers := List(
@@ -45,7 +45,12 @@ ThisBuild / javacOptions ++= Seq("--release", "17")
 
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
-  .aggregate(valarCoreJVM, valarCoreNative, valarMunitJVM, valarMunitNative)
+  .aggregate(
+    valarCoreJVM,
+    valarCoreNative,
+    valarMunitJVM,
+    valarMunitNative
+  )
   .settings(
     name := "valar-root",
     publish / skip := true
