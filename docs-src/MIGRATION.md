@@ -1,8 +1,8 @@
 # Migration Guide
 
-## Migrating from v0.3.0 to v0.4.0
+## Migrating from v0.3.0 to v0.4.8
 
-The main breaking change in v0.4.0 is the artifact name has changed from valar to valar-core to support the new modular
+The main breaking change since v0.4.0 is the artifact name has changed from valar to valar-core to support the new modular
 architecture.
 
 ### Update build.sbt:
@@ -12,11 +12,26 @@ architecture.
 libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
 // With this (note the triple %%% for cross-platform support):
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.0"
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8"
 
 // Add optional testing utilities (if desired):
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.0" % Test
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8" % Test
+
+// Alternatively, use bundle versions with all dependencies included:
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8-bundle" % Test
 ```
+
+### Available Artifacts
+
+The `%%%` operator in sbt will automatically select the appropriate artifact for your platform (JVM or Native). If you need to reference a specific artifact directly, here are all the available options:
+
+| Module | Platform | Artifact ID             | Standard Version                                     | Bundle Version                                              |
+|--------|----------|-------------------------|------------------------------------------------------|-------------------------------------------------------------|
+| Core   | JVM      | valar-core_3            | `"net.ghoula" %% "valar-core" % "0.4.8"`             | `"net.ghoula" %% "valar-core" % "0.4.8-bundle"`             |
+| Core   | Native   | valar-core_native0.5_3  | `"net.ghoula" % "valar-core_native0.5_3" % "0.4.8"`  | `"net.ghoula" % "valar-core_native0.5_3" % "0.4.8-bundle"`  |
+| MUnit  | JVM      | valar-munit_3           | `"net.ghoula" %% "valar-munit" % "0.4.8"`            | `"net.ghoula" %% "valar-munit" % "0.4.8-bundle"`            |
+| MUnit  | Native   | valar-munit_native0.5_3 | `"net.ghoula" % "valar-munit_native0.5_3" % "0.4.8"` | `"net.ghoula" % "valar-munit_native0.5_3" % "0.4.8-bundle"` |
 
 Your existing validation code will continue to work without any changes.
 
@@ -43,7 +58,7 @@ given Validator[String] with { ... }
 // More specific validator
 given Validator[Email] with { ... }
 
-// Which one gets used? In 3.6 vs 3.7 it might be different!
+// Which one gets used? In 3.6 vs. 3.7 it might be different!
 val result = summon[Validator[Email]].validate(email)
 ```
 
@@ -51,30 +66,30 @@ val result = summon[Validator[Email]].validate(email)
 
 1. **Explicit imports**: Place validators in objects and import only the ones you need.
 
-```scala
-object validators {
-  given stringValidator: Validator[String] with { ... }
-  given emailValidator: Validator[Email] with { ... }
-}
-
-// Be explicit about which one to use
-import validators.emailValidator
-```
+    ```scala
+    object validators {
+      given stringValidator: Validator[String] with { ... }
+      given emailValidator: Validator[Email] with { ... }
+    }
+    
+    // Be explicit about which one to use
+    import validators.emailValidator
+    ```
 
 2. **Named instances**: Give your validators explicit names and use them directly.
 
-```scala
-given generalStringValidator: Validator[String] with { ... }
-given specificEmailValidator: Validator[Email] with { ... }
-
-// Use the specific one explicitly
-val result = specificEmailValidator.validate(email)
-```
+    ```scala
+    given generalStringValidator: Validator[String] with { ... }
+    given specificEmailValidator: Validator[Email] with { ... }
+    
+    // Use the specific one explicitly
+    val result = specificEmailValidator.validate(email)
+    ```
 
 3. **Extension methods**: Define your validation logic as extension methods to avoid ambiguity.
 
-```scala
-extension (email: Email) {
-  def validate: ValidationResult[Email] = { ... }
-}
-```
+    ```scala
+    extension (email: Email) {
+      def validate: ValidationResult[Email] = { ... }
+    }
+    ```
