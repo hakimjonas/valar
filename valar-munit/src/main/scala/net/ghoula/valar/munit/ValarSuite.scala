@@ -10,6 +10,25 @@ import net.ghoula.valar.ValidationResult
   */
 trait ValarSuite extends FunSuite {
 
+  /** Asserts that a ValidationResult is Valid and returns the validated value for further
+    * assertions.
+    *
+    * @param result
+    *   The ValidationResult to inspect.
+    * @param clue
+    *   A clue to provide if the assertion fails.
+    * @return
+    *   The validated value if the result is Valid.
+    */
+  def assertValid[A](result: ValidationResult[A], clue: Any = "Expected Valid result")(using loc: Location): A = {
+    result match {
+      case ValidationResult.Valid(value) => value
+      case ValidationResult.Invalid(errors) =>
+        val errorReport = errors.map(e => s"  - ${e.prettyPrint(2)}").mkString("\n")
+        fail(s"$clue, but got Invalid with errors:\n$errorReport")
+    }
+  }
+
   /** Asserts that a ValidationResult is Invalid and contains exactly one error, then allows further
     * assertions on that single error.
     *
@@ -78,4 +97,31 @@ trait ValarSuite extends FunSuite {
         errors
     }
   }
+
+  /** Asserts that a ValidationResult is Invalid and allows flexible assertions on the error
+    * collection. This is a simpler alternative to `assertInvalid` that works with regular
+    * functions.
+    *
+    * @param result
+    *   The ValidationResult to inspect.
+    * @param clue
+    *   A clue to provide if the assertion fails.
+    * @param body
+    *   A function that takes the Vector of ValidationErrors and performs further checks.
+    * @return
+    *   The Vector of ValidationErrors on success.
+    */
+  def assertInvalidWith[A](
+    result: ValidationResult[A],
+    clue: Any = "Expected Invalid result"
+  )(body: Vector[ValidationError] => Unit)(using loc: Location): Vector[ValidationError] = {
+    result match {
+      case ValidationResult.Valid(value) =>
+        fail(s"$clue, but got Valid($value)")
+      case ValidationResult.Invalid(errors) =>
+        body(errors)
+        errors
+    }
+  }
+
 }

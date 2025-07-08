@@ -8,14 +8,14 @@ Valar is a validation library for Scala 3 designed for clarity and ease of use. 
 metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
 detailed error messages useful for debugging or user feedback.
 
-## **✨ What's New in 0.4.8**
+## **✨ What's New in 0.5.X**
 
-* **🚀 Bundle Mode**: All modules now offer a `-bundle` version that includes all dependencies, making it easier to use
-  in projects.
-* **🎯 Platform-Specific Artifacts**: Valar provides dedicated artifacts for both JVM (`valar-core_3`, `valar-munit_3`)
-  and Scala Native (`valar-core_native0.5_3`, `valar-munit_native0.5_3`) platforms.
-* **📦 Modular Architecture**: The library is split into focused modules: `valar-core` for core validation functionality
-  and the optional `valar-munit` for enhanced testing utilities.
+* **🔍 ValidationObserver**: A new trait in `valar-core` for observing validation outcomes without altering the flow, perfect for logging, metrics collection, or auditing with zero overhead when not used.
+* **🌐 valar-translator Module**: New internationalization (i18n) support for validation error messages through the `Translator` typeclass.
+* **🧪 Enhanced ValarSuite**: Updated testing utilities in `valar-munit` now used in `valar-translator` for more robust validation testing.
+* **⚡ Reworked Macros**: Simpler, more performant, and more modern macro implementations for better compile-time validation.
+* **🛡️ MiMa Checks**: Added binary compatibility verification to ensure smooth upgrades between versions.
+* **📚 Improved Documentation**: Comprehensive updates to scaladoc and module-level README files for better developer experience.
 
 ## **Key Features**
 
@@ -38,12 +38,14 @@ detailed error messages useful for debugging or user feedback.
 
 Valar provides artifacts for both JVM and Scala Native platforms:
 
-| Module    | Platform | Artifact ID             | Standard Version                                                                                                                                                                                       | Bundle Version                                                                                                                                                                                                           |
-|-----------|----------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Core**  | JVM      | valar-core_3            | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                       |
-| **Core**  | Native   | valar-core_native0.5_3  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)   | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)   |
-| **MUnit** | JVM      | valar-munit_3           | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                     | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                     |
-| **MUnit** | Native   | valar-munit_native0.5_3 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3) | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3) |
+| Module          | Platform | Artifact ID                   | Standard Version                                                                                                                                                                                                 | Bundle Version                                                                                                                                                                                                                     |
+|-----------------|----------|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Core**        | JVM      | valar-core_3                  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 |
+| **Core**        | Native   | valar-core_native0.5_3        | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             |
+| **MUnit**       | JVM      | valar-munit_3                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               |
+| **MUnit**       | Native   | valar-munit_native0.5_3       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           |
+| **Translator**  | JVM      | valar-translator_3            | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     |
+| **Translator**  | Native   | valar-translator_native0.5_3  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) |
 
 The **bundle versions** (with `-bundle` suffix) include all dependencies, making them easier to use in projects that
 don't need fine-grained dependency control.
@@ -56,14 +58,18 @@ Add the following to your build.sbt:
 
 ```scala
 // The core validation library (JVM & Scala Native)
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8"
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
+
+// Optional: For internationalization (i18n) support
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
 
 // Optional: For enhanced testing with MUnit
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8" % Test
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
 
 // Alternatively, use bundle versions with all dependencies included
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8-bundle" % Test
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0-bundle"
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0-bundle"
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0-bundle" % Test
 ```
 
 ## **Basic Usage Example**
@@ -210,10 +216,96 @@ includes:
 Most built-in validators for scalar types (excluding those with obvious constraints like Int, String, Float, Double) are
 **pass-through** validators. You should define custom validators if you need specific constraints for these types.
 
-## **Migration Guide from v0.3.0**
+## **ValidationObserver**
 
-The main breaking change since v0.4.0 is the **artifact name has changed** from valar to valar-core to support the new
-modular architecture.
+The `ValidationObserver` trait provides a powerful mechanism to decouple validation logic from cross-cutting concerns such as logging, metrics collection, or auditing:
+
+```scala
+import net.ghoula.valar.*
+import org.slf4j.LoggerFactory
+
+// Define a custom observer that logs validation results
+given loggingObserver: ValidationObserver with {
+  private val logger = LoggerFactory.getLogger("ValidationAnalytics")
+
+  def onResult[A](result: ValidationResult[A]): Unit = result match {
+    case ValidationResult.Valid(_) => 
+      logger.info("Validation succeeded")
+    case ValidationResult.Invalid(errors) => 
+      logger.warn(s"Validation failed with ${errors.size} errors: ${errors.map(_.message).mkString(", ")}")
+  }
+}
+
+// Use the observer in your validation flow
+val result = User.validate(user)
+  .observe()  // The observer's onResult is called here
+  .map(_.toUpperCase)
+```
+
+Key features of ValidationObserver:
+* **Zero Overhead**: When using the default no-op observer, the compiler eliminates all observer-related code
+* **Non-Intrusive**: Observes validation results without altering the validation flow
+* **Chainable**: Works seamlessly with other operations in the validation pipeline
+* **Flexible**: Can be used for logging, metrics, alerting, or any other side effect
+
+## **Internationalization with valar-translator**
+
+The `valar-translator` module provides internationalization (i18n) support for validation error messages:
+
+```scala
+import net.ghoula.valar.*
+import net.ghoula.valar.translator.Translator
+
+// Implement the Translator trait with your i18n library
+given myTranslator: Translator with {
+  def translate(error: ValidationError): String = {
+    // Logic to look up the error's key and format with its arguments
+    I18n.lookup(
+      error.key.getOrElse("error.unknown"),
+      error.args
+    )
+  }
+}
+
+// Use the translator in your validation flow
+val result = User.validate(user)
+  .observe()  // Optional: observe the raw result first
+  .translateErrors()  // Translate errors for user presentation
+```
+
+The `valar-translator` module is designed to:
+* Integrate with any i18n library through the `Translator` typeclass
+* Compose cleanly with other Valar features like ValidationObserver
+* Provide a clear separation between validation logic and presentation concerns
+
+## **Migration Guide from v0.4.8 to v0.5.0**
+
+Version 0.5.0 introduces several new features while maintaining backward compatibility with v0.4.8:
+
+1. **New ValidationObserver trait** for observing validation outcomes
+2. **New valar-translator module** for internationalization support
+3. **Enhanced ValarSuite** with improved testing utilities
+4. **Reworked macros** for better performance and modern Scala 3 features
+5. **MiMa checks** to ensure binary compatibility
+
+To upgrade to v0.5.0, update your build.sbt:
+
+```scala
+// Update core library
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
+
+// Add optional translator module (if needed)
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
+
+// Update testing utilities (if used)
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
+```
+
+Your existing validation code will continue to work without any changes.
+
+## **Migration Guide from v0.3.0 to v0.4.8**
+
+The main breaking change in v0.4.0 was the **artifact name change** from valar to valar-core to support the modular architecture.
 
 1. **Update build.sbt**:
    ```scala
@@ -221,22 +313,8 @@ modular architecture.
    libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
    // With this (note the triple %%% for cross-platform support):
-   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8"
+   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
    ```
-
-2. **Add optional testing utilities** (if desired):
-   ```scala
-   libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8" % Test
-   ```
-
-3. **For simplified dependency management** (optional):
-   ```scala
-   // Use bundle versions with all dependencies included
-   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
-   libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8-bundle" % Test
-   ```
-
-Your existing validation code will continue to work without any changes.
 
 ## **Compatibility**
 

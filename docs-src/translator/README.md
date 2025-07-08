@@ -1,5 +1,9 @@
 # valar-translator
 
+[![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=maven-central&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)
+[![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
 The `valar-translator` module provides internationalization (i18n) support for Valar's validation error messages. It introduces a `Translator` typeclass that allows you to integrate with any i18n library to convert structured validation errors into localized, human-readable strings.
 
 ## Usage
