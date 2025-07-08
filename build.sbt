@@ -63,8 +63,8 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
     // --- MiMa & TASTy-MiMa Configuration ---
-    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8"),
-    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8"),
+    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
+    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
     // --- Library Dependencies ---
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
@@ -98,8 +98,8 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     name := "valar-munit",
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
-    mimaPreviousArtifacts := Set.empty,
-    tastyMiMaPreviousArtifacts := Set.empty,
+    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
+    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
   .jvmSettings(
