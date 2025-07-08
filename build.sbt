@@ -45,7 +45,9 @@ lazy val root = (project in file("."))
     valarCoreJVM,
     valarCoreNative,
     valarMunitJVM,
-    valarMunitNative
+    valarMunitNative,
+    valarTranslatorJVM,
+    valarTranslatorNative
   )
   .settings(
     name := "valar-root",
@@ -100,6 +102,41 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     tastyMiMaPreviousArtifacts := Set.empty,
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
+  .jvmSettings(
+    mdocIn := file("docs-src/munit"),
+    mdocOut := file("valar-munit"),
+    mdocVariables := Map(
+      "VERSION" -> version.value,
+      "SCALA_VERSION" -> scalaVersion.value
+    )
+  )
+  .jvmConfigure(_.enablePlugins(MdocPlugin))
+  .nativeSettings(
+    testFrameworks += new TestFramework("munit.Framework")
+  )
+
+lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
+  .crossType(CrossType.Pure)
+  .in(file("valar-translator"))
+  .dependsOn(valarCore)
+  .settings(sonatypeSettings *)
+  .settings(
+    name := "valar-translator",
+    usePgpKeyHex("9614A0CE1CE76975"),
+    useGpgAgent := true,
+    mimaPreviousArtifacts := Set.empty,
+    tastyMiMaPreviousArtifacts := Set.empty,
+    libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1" % Test
+  )
+  .jvmSettings(
+    mdocIn := file("docs-src/translator"),
+    mdocOut := file("valar-translator"),
+    mdocVariables := Map(
+      "VERSION" -> version.value,
+      "SCALA_VERSION" -> scalaVersion.value
+    )
+  )
+  .jvmConfigure(_.enablePlugins(MdocPlugin))
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
@@ -109,3 +146,5 @@ lazy val valarCoreJVM = valarCore.jvm
 lazy val valarCoreNative = valarCore.native
 lazy val valarMunitJVM = valarMunit.jvm
 lazy val valarMunitNative = valarMunit.native
+lazy val valarTranslatorJVM = valarTranslator.jvm
+lazy val valarTranslatorNative = valarTranslator.native
