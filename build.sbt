@@ -65,6 +65,7 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     // --- MiMa & TASTy-MiMa Configuration ---
     mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
     tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    mimaFailOnNoPrevious := false, // Prevents MiMa from failing when no previous artifacts are set
     // --- Library Dependencies ---
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
@@ -100,6 +101,7 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     useGpgAgent := true,
     mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
     tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    mimaFailOnNoPrevious := false, // Prevents MiMa from failing when no previous artifacts are set
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
   .jvmSettings(
@@ -126,6 +128,7 @@ lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
     useGpgAgent := true,
     mimaPreviousArtifacts := Set.empty,
     tastyMiMaPreviousArtifacts := Set.empty,
+    mimaFailOnNoPrevious := false, // Prevents MiMa from failing when no previous artifacts are set,
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1" % Test
   )
   .jvmSettings(
