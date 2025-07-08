@@ -1,5 +1,9 @@
 # valar-munit
 
+[![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=maven-central&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)
+[![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+
 The valar-munit module provides testing utilities for Valar validation logic using the MUnit testing framework. It
 introduces the ValarSuite trait that extends MUnit's FunSuite with specialized assertion helpers for ValidationResult.
 
@@ -121,6 +125,8 @@ test("validation fails with expected errors") {
 
 - **Better Error Messages**: Failed assertions provide detailed error reports with pretty-printed validation errors.
 
-- **Type Safety**: The assertion helpers maintain type information, allowing for chained assertions on the validated value.
+- **Type Safety**: The assertion helpers maintain type information, allowing for chained assertions on the validated
+  value.
 
-- **Flexible API**: Multiple assertion styles (partial functions, regular functions, specific error counts) to match your testing preferences.
+- **Flexible API**: Multiple assertion styles (partial functions, regular functions, specific error counts) to match
+  your testing preferences.

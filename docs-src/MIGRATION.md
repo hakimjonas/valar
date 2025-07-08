@@ -16,16 +16,11 @@ Version 0.5.0 introduces several new features while maintaining backward compati
 // Update core library
 libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
 
-// Add optional translator module (if needed)
+// Add the optional translator module (if needed)
 libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
 
 // Update testing utilities (if used)
 libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
-
-// Alternatively, use bundle versions with all dependencies included
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0-bundle"
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0-bundle"
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0-bundle" % Test
 ```
 
 Your existing validation code will continue to work without any changes.
@@ -64,11 +59,23 @@ The valar-translator module provides internationalization support:
 import net.ghoula.valar.*
 import net.ghoula.valar.translator.Translator
 
-// Implement the Translator trait with your i18n library
+// --- Example Setup ---
+// In a real application, this would come from a properties file or other i18n system.
+val translations: Map[String, String] = Map(
+  "error.string.nonEmpty" -> "The field must not be empty.",
+  "error.int.nonNegative" -> "The value cannot be negative.",
+  "error.unknown"         -> "An unexpected validation error occurred."
+)
+
+// --- Implementation of the Translator trait ---
 given myTranslator: Translator with {
   def translate(error: ValidationError): String = {
-    // Logic to look up the error's key and format with its arguments
-    I18n.lookup(error.key.getOrElse("error.unknown"), error.args)
+    // Logic to look up the error's key in your translation map.
+    // The `.getOrElse` provides a safe fallback.
+    translations.getOrElse(
+      error.key.getOrElse("error.unknown"),
+      error.message // Fall back to the original message if the key is not found
+    )
   }
 }
 
@@ -88,26 +95,24 @@ architecture.
 libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
 // With this (note the triple %%% for cross-platform support):
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8"
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
 
 // Add optional testing utilities (if desired):
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8" % Test
-
-// Alternatively, use bundle versions with all dependencies included:
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
 libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.4.8-bundle" % Test
 ```
 
-### Available Artifacts
+> **Note:** v0.4.8 used bundle versions (`-bundle` suffix) that included all dependencies. Starting from v0.5.0, we've moved to the standard approach without bundle versions for simpler dependency management.
 
-The `%%%` operator in sbt will automatically select the appropriate artifact for your platform (JVM or Native). If you need to reference a specific artifact directly, here are all the available options:
+### Available Artifacts for v0.4.8
 
-| Module | Platform | Artifact ID             | Standard Version                                     | Bundle Version                                              |
-|--------|----------|-------------------------|------------------------------------------------------|-------------------------------------------------------------|
-| Core   | JVM      | valar-core_3            | `"net.ghoula" %% "valar-core" % "0.4.8"`             | `"net.ghoula" %% "valar-core" % "0.4.8-bundle"`             |
-| Core   | Native   | valar-core_native0.5_3  | `"net.ghoula" % "valar-core_native0.5_3" % "0.4.8"`  | `"net.ghoula" % "valar-core_native0.5_3" % "0.4.8-bundle"`  |
-| MUnit  | JVM      | valar-munit_3           | `"net.ghoula" %% "valar-munit" % "0.4.8"`            | `"net.ghoula" %% "valar-munit" % "0.4.8-bundle"`            |
-| MUnit  | Native   | valar-munit_native0.5_3 | `"net.ghoula" % "valar-munit_native0.5_3" % "0.4.8"` | `"net.ghoula" % "valar-munit_native0.5_3" % "0.4.8-bundle"` |
+The `%%%` operator in sbt will automatically select the appropriate artifact for your platform (JVM or Native). For v0.4.8, only bundle versions are available:
+
+| Module | Platform | Artifact ID             | Bundle Version                                              |
+|--------|----------|-------------------------|-------------------------------------------------------------|
+| Core   | JVM      | valar-core_3            | `"net.ghoula" %% "valar-core" % "0.4.8-bundle"`             |
+| Core   | Native   | valar-core_native0.5_3  | `"net.ghoula" % "valar-core_native0.5_3" % "0.4.8-bundle"`  |
+| MUnit  | JVM      | valar-munit_3           | `"net.ghoula" %% "valar-munit" % "0.4.8-bundle"`            |
+| MUnit  | Native   | valar-munit_native0.5_3 | `"net.ghoula" % "valar-munit_native0.5_3" % "0.4.8-bundle"` |
 
 Your existing validation code will continue to work without any changes.
 

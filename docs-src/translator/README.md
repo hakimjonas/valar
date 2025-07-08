@@ -6,6 +6,14 @@
 
 The `valar-translator` module provides internationalization (i18n) support for Valar's validation error messages. It introduces a `Translator` typeclass that allows you to integrate with any i18n library to convert structured validation errors into localized, human-readable strings.
 
+## Installation
+
+Add the valar-translator dependency to your build.sbt:
+
+```scala
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
+```
+
 ## Usage
 
 The module provides a `Translator` trait and an extension method, `translateErrors()`, on `ValidationResult`.
@@ -18,13 +26,22 @@ Create a `given` instance of `Translator` that contains your localization logic.
 import net.ghoula.valar.translator.Translator
 import net.ghoula.valar.ValidationErrors.ValidationError
 
-// Assuming you have an I18n library
+// --- Example Setup ---
+// In a real application, this would come from a properties file or other i18n system.
+val translations: Map[String, String] = Map(
+  "error.string.nonEmpty" -> "The field must not be empty.",
+  "error.int.nonNegative" -> "The value cannot be negative.",
+  "error.unknown"         -> "An unexpected validation error occurred."
+)
+
+// --- Implementation of the Translator trait ---
 given myTranslator: Translator with {
   def translate(error: ValidationError): String = {
-    // Logic to look up the error's key and format with its arguments
-    I18n.lookup(
+    // Logic to look up the error's key in your translation map.
+    // The `.getOrElse` provides a safe fallback.
+    translations.getOrElse(
       error.key.getOrElse("error.unknown"),
-      error.args
+      error.message // Fall back to the original message if the key is not found
     )
   }
 }

@@ -38,17 +38,14 @@ detailed error messages useful for debugging or user feedback.
 
 Valar provides artifacts for both JVM and Scala Native platforms:
 
-| Module          | Platform | Artifact ID                   | Standard Version                                                                                                                                                                                                 | Bundle Version                                                                                                                                                                                                                     |
-|-----------------|----------|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Core**        | JVM      | valar-core_3                  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 |
-| **Core**        | Native   | valar-core_native0.5_3        | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             |
-| **MUnit**       | JVM      | valar-munit_3                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               |
-| **MUnit**       | Native   | valar-munit_native0.5_3       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           |
-| **Translator**  | JVM      | valar-translator_3            | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     |
-| **Translator**  | Native   | valar-translator_native0.5_3  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=bundle&style=flat-square&classifier=bundle)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) |
-
-The **bundle versions** (with `-bundle` suffix) include all dependencies, making them easier to use in projects that
-don't need fine-grained dependency control.
+| Module          | Platform | Artifact ID                   | Maven Central                                                                                                                                                                                                    |
+|-----------------|----------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Core**        | JVM      | valar-core_3                  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 |
+| **Core**        | Native   | valar-core_native0.5_3        | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             |
+| **MUnit**       | JVM      | valar-munit_3                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               |
+| **MUnit**       | Native   | valar-munit_native0.5_3       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           |
+| **Translator**  | JVM      | valar-translator_3            | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     |
+| **Translator**  | Native   | valar-translator_native0.5_3  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) |
 
 > **Note:** When using the `%%%` operator in sbt, the correct platform-specific artifact will be selected automatically.
 
@@ -65,11 +62,6 @@ libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
 
 // Optional: For enhanced testing with MUnit
 libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
-
-// Alternatively, use bundle versions with all dependencies included
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0-bundle"
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0-bundle"
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0-bundle" % Test
 ```
 
 ## **Basic Usage Example**
@@ -256,13 +248,22 @@ The `valar-translator` module provides internationalization (i18n) support for v
 import net.ghoula.valar.*
 import net.ghoula.valar.translator.Translator
 
-// Implement the Translator trait with your i18n library
+// --- Example Setup ---
+// In a real application, this would come from a properties file or other i18n system.
+val translations: Map[String, String] = Map(
+  "error.string.nonEmpty" -> "The field must not be empty.",
+  "error.int.nonNegative" -> "The value cannot be negative.",
+  "error.unknown"         -> "An unexpected validation error occurred."
+)
+
+// --- Implementation of the Translator trait ---
 given myTranslator: Translator with {
   def translate(error: ValidationError): String = {
-    // Logic to look up the error's key and format with its arguments
-    I18n.lookup(
+    // Logic to look up the error's key in your translation map.
+    // The `.getOrElse` provides a safe fallback.
+    translations.getOrElse(
       error.key.getOrElse("error.unknown"),
-      error.args
+      error.message // Fall back to the original message if key is not found
     )
   }
 }
@@ -313,7 +314,7 @@ The main breaking change in v0.4.0 was the **artifact name change** from valar t
    libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
    // With this (note the triple %%% for cross-platform support):
-   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
+   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
    ```
 
 ## **Compatibility**

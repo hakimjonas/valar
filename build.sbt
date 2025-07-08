@@ -63,8 +63,8 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
     // --- MiMa & TASTy-MiMa Configuration ---
-    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
-    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
+    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
     // --- Library Dependencies ---
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
@@ -98,8 +98,8 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     name := "valar-munit",
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
-    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
-    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8-bundle"),
+    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
   .jvmSettings(
