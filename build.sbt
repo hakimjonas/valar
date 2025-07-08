@@ -73,7 +73,6 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
-    // --- Updated Check Command ---
     addCommandAlias("prepare", "scalafixAll; scalafmtAll; scalafmtSbt"),
     addCommandAlias(
       "check",
