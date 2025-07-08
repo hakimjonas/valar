@@ -207,6 +207,24 @@ object Validator {
   }
 
   /** Helper method for validating iterable collections and building results.
+    *
+    * This method provides a generic implementation for validating any iterable collection of
+    * elements. It applies the provided validator to each element, accumulates any validation
+    * errors, and constructs a new collection of the same type containing only valid elements if all
+    * validations succeed.
+    *
+    * @tparam A
+    *   the element type to be validated
+    * @tparam C
+    *   the collection type constructor (e.g., Array, Vector)
+    * @param xs
+    *   the iterable collection of elements to validate
+    * @param builder
+    *   a function that constructs a collection of type C from a Vector of valid elements
+    * @param v
+    *   the implicit validator for type A
+    * @return
+    *   a ValidationResult containing either the valid collection or accumulated errors
     */
   private def validateIterable[A, C[_]](
     xs: Iterable[A],
@@ -310,66 +328,147 @@ object Validator {
     * marked as `inline` to allow the compiler to eliminate the validation overhead, making them
     * zero-cost abstractions when used by the `deriveValidatorMacro`.
     */
+
+  /** Pass-through validator for Boolean values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given booleanValidator: Validator[Boolean] with {
     def validate(b: Boolean): ValidationResult[Boolean] = ValidationResult.Valid(b)
   }
 
+  /** Pass-through validator for Byte values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given byteValidator: Validator[Byte] with {
     def validate(b: Byte): ValidationResult[Byte] = ValidationResult.Valid(b)
   }
 
+  /** Pass-through validator for Short values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given shortValidator: Validator[Short] with {
     def validate(s: Short): ValidationResult[Short] = ValidationResult.Valid(s)
   }
 
+  /** Pass-through validator for Long values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given longValidator: Validator[Long] with {
     def validate(l: Long): ValidationResult[Long] = ValidationResult.Valid(l)
   }
 
+  /** Pass-through validator for Char values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given charValidator: Validator[Char] with {
     def validate(c: Char): ValidationResult[Char] = ValidationResult.Valid(c)
   }
 
+  /** Pass-through validator for Unit values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given unitValidator: Validator[Unit] with {
     def validate(u: Unit): ValidationResult[Unit] = ValidationResult.Valid(u)
   }
 
+  /** Pass-through validator for BigInt values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given bigIntValidator: Validator[BigInt] with {
     def validate(bi: BigInt): ValidationResult[BigInt] = ValidationResult.Valid(bi)
   }
 
+  /** Pass-through validator for BigDecimal values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given bigDecimalValidator: Validator[BigDecimal] with {
     def validate(bd: BigDecimal): ValidationResult[BigDecimal] = ValidationResult.Valid(bd)
   }
 
+  /** Pass-through validator for Symbol values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given symbolValidator: Validator[Symbol] with {
     def validate(s: Symbol): ValidationResult[Symbol] = ValidationResult.Valid(s)
   }
 
+  /** Pass-through validator for UUID values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given uuidValidator: Validator[UUID] with {
     def validate(v: UUID): ValidationResult[UUID] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for Instant values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given instantValidator: Validator[Instant] with {
     def validate(v: Instant): ValidationResult[Instant] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for LocalDate values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given localDateValidator: Validator[LocalDate] with {
     def validate(v: LocalDate): ValidationResult[LocalDate] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for LocalTime values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given localTimeValidator: Validator[LocalTime] with {
     def validate(v: LocalTime): ValidationResult[LocalTime] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for LocalDateTime values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given localDateTimeValidator: Validator[LocalDateTime] with {
     def validate(v: LocalDateTime): ValidationResult[LocalDateTime] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for ZonedDateTime values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given zonedDateTimeValidator: Validator[ZonedDateTime] with {
     def validate(v: ZonedDateTime): ValidationResult[ZonedDateTime] = ValidationResult.Valid(v)
   }
 
+  /** Pass-through validator for Duration values.
+    *
+    * Always returns a valid result without additional validation. Marked as `inline` for compiler
+    * optimization.
+    */
   inline given durationValidator: Validator[Duration] with {
     def validate(v: Duration): ValidationResult[Duration] = ValidationResult.Valid(v)
   }
@@ -389,6 +488,27 @@ object Validator {
   inline def deriveValidatorMacro[T](using m: Mirror.ProductOf[T]): Validator[T] =
     ${ deriveValidatorMacroImpl[T, m.MirroredElemTypes, m.MirroredElemLabels]('m) }
 
+  /** Implementation of the `deriveValidatorMacro` method.
+    *
+    * This macro implementation generates a validator for a product type (case class) by:
+    *   1. Summoning validators for each field.
+    *   2. Extracting field names from the mirror.
+    *   3. Determining which fields are Options - for null-safety handling.
+    *   4. Generating code that validates each field and accumulates errors.
+    *
+    * @tparam T
+    *   the product type (case class) for which to derive a validator
+    * @tparam Elems
+    *   tuple type representing the types of all fields in T
+    * @tparam Labels
+    *   tuple type representing the names of all fields in T
+    * @param m
+    *   expression containing the product mirror for type T
+    * @param q
+    *   the Quotes context for macro expansion
+    * @return
+    *   an expression that constructs a Validator[T]
+    */
   private def deriveValidatorMacroImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
   )(using q: Quotes): Expr[Validator[T]] = {
@@ -448,6 +568,19 @@ object Validator {
     }
   }
 
+  /** Summons validators for each element type in a tuple.
+    *
+    * This helper method is used by the macro implementation to get validator instances for each
+    * field in a product type. It recursively processes the tuple of element types, summoning a
+    * validator for each type and converting it to Validator[Any] for uniform handling.
+    *
+    * @tparam Elems
+    *   tuple type representing the types for which to summon validators
+    * @param q
+    *   the Quotes context for macro expansion
+    * @return
+    *   a list of expressions, each constructing a Validator[Any]
+    */
   private def summonValidators[Elems <: Tuple: Type](using q: Quotes): List[Expr[Validator[Any]]] = {
     import q.reflect.*
     Type.of[Elems] match {
@@ -460,6 +593,19 @@ object Validator {
     }
   }
 
+  /** Extracts field names from a tuple type of string literals.
+    *
+    * This helper method is used by the macro implementation to obtain the names of fields in a
+    * product type. It recursively processes the tuple of string literal types, extracting each name
+    * as a String.
+    *
+    * @tparam Labels
+    *   tuple type of string literals representing field names
+    * @param q
+    *   the Quotes context for macro expansion
+    * @return
+    *   a list of field names as strings
+    */
   private def getLabels[Labels <: Tuple: Type](using q: Quotes): List[String] = {
     import q.reflect.*
     def loop(tpe: TypeRepr): List[String] = tpe.dealias match {
@@ -475,6 +621,18 @@ object Validator {
     loop(TypeRepr.of[Labels])
   }
 
+  /** Determines which fields in a product type are Options.
+    *
+    * This helper method is used by the macro implementation to identify which fields in a product
+    * type are Option types. This information is used for null-safety handling during validation.
+    *
+    * @tparam Elems
+    *   tuple type representing the types of all fields
+    * @param q
+    *   the Quotes context for macro expansion
+    * @return
+    *   a list of booleans indicating whether each field is an Option type
+    */
   private def getIsOptionFlags[Elems <: Tuple: Type](using q: Quotes): List[Boolean] = {
     import q.reflect.*
     Type.of[Elems] match {
