@@ -5,7 +5,6 @@ import scala.util.{Failure, Success, Try}
 
 import net.ghoula.valar
 import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
-import net.ghoula.valar.internal.MacroHelpers
 
 /** Represents the outcome of a validation operation, containing either a successfully validated
   * value or validation errors.
@@ -229,25 +228,21 @@ object ValidationResult {
     val resultB = validateType[B](value)(using vb, ctB)
 
     (resultA, resultB) match {
-      case (Valid(_), _) => MacroHelpers.upcastTo(resultA)
-      case (_, Valid(_)) => MacroHelpers.upcastTo(resultB)
+      case (Valid(_), _) => resultA
+      case (_, Valid(_)) => resultB
       case (Invalid(errsA), Invalid(errsB)) =>
         val typeAName = ctA.runtimeClass.getSimpleName
         val typeBName = ctB.runtimeClass.getSimpleName
         val expectedTypes = s"$typeAName | $typeBName"
         val summaryMessage = s"Value failed validation for all expected types: $expectedTypes"
-        val allNestedErrors: Vector[ValidationError] = errsA ++ errsB
 
-        val combinedError: ValidationError = ValidationErrors.ValidationError(
+        val combinedError: ValidationError = ValidationError(
           message = summaryMessage,
-          fieldPath = Nil,
-          children = allNestedErrors,
-          code = None,
-          severity = None,
+          children = errsA ++ errsB,
           expected = Some(expectedTypes),
           actual = Some(value.toString)
         )
-        ValidationResult.invalid(combinedError)
+        invalid(combinedError)
     }
   }
 
@@ -443,11 +438,11 @@ object ValidationResult {
       * @return
       *   The first successful result or combined errors
       */
-    def or[B](
+    def or[B >: A](
       that: ValidationResult[B]
-    )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[A | B] = (vr, that) match {
-      case (Valid(_), _) => MacroHelpers.upcastTo(vr)
-      case (_, Valid(_)) => MacroHelpers.upcastTo(that)
+    )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[B] = (vr, that) match {
+      case (Valid(_), _) => vr
+      case (_, Valid(_)) => that
       case (Invalid(errsA), Invalid(errsB)) => Invalid(acc.combine(errsA, errsB))
     }
 

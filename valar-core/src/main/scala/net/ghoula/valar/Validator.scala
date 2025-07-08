@@ -3,7 +3,6 @@ package net.ghoula.valar
 import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, ZonedDateTime}
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
-import scala.compiletime.{constValueTuple, summonInline}
 import scala.deriving.Mirror
 import scala.language.reflectiveCalls
 import scala.quoted.{Expr, Quotes, Type}
@@ -12,7 +11,7 @@ import scala.reflect.ClassTag
 import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.ValidationHelpers.*
 import net.ghoula.valar.ValidationResult.{validateUnion, given}
-import net.ghoula.valar.internal.MacroHelpers
+import net.ghoula.valar.internal.MacroHelper
 
 /** A typeclass for defining custom validation logic for type `A`.
   *
@@ -307,114 +306,71 @@ object Validator {
     def validate(value: A | B): ValidationResult[A | B] = validateUnion[A, B](value)(using va, vb, ctA, ctB)
   }
 
-  /** Pass-through validator for Boolean. Always returns Valid. */
-  given booleanValidator: Validator[Boolean] with {
+  /** This section provides "pass-through" `given` instances that always return `Valid`. They are
+    * marked as `inline` to allow the compiler to eliminate the validation overhead, making them
+    * zero-cost abstractions when used by the `deriveValidatorMacro`.
+    */
+  inline given booleanValidator: Validator[Boolean] with {
     def validate(b: Boolean): ValidationResult[Boolean] = ValidationResult.Valid(b)
   }
 
-  /** Pass-through validator for Byte. Always returns Valid. */
-  given byteValidator: Validator[Byte] with {
+  inline given byteValidator: Validator[Byte] with {
     def validate(b: Byte): ValidationResult[Byte] = ValidationResult.Valid(b)
   }
 
-  /** Pass-through validator for Short. Always returns Valid. */
-  given shortValidator: Validator[Short] with {
+  inline given shortValidator: Validator[Short] with {
     def validate(s: Short): ValidationResult[Short] = ValidationResult.Valid(s)
   }
 
-  /** Pass-through validator for Long. Always returns Valid. */
-  given longValidator: Validator[Long] with {
+  inline given longValidator: Validator[Long] with {
     def validate(l: Long): ValidationResult[Long] = ValidationResult.Valid(l)
   }
 
-  /** Pass-through validator for Char. Always returns Valid. */
-  given charValidator: Validator[Char] with {
+  inline given charValidator: Validator[Char] with {
     def validate(c: Char): ValidationResult[Char] = ValidationResult.Valid(c)
   }
 
-  /** Pass-through validator for Unit. Always returns Valid. */
-  given unitValidator: Validator[Unit] with {
+  inline given unitValidator: Validator[Unit] with {
     def validate(u: Unit): ValidationResult[Unit] = ValidationResult.Valid(u)
   }
 
-  /** Pass-through validator for BigInt. Always returns Valid. */
-  given bigIntValidator: Validator[BigInt] with {
+  inline given bigIntValidator: Validator[BigInt] with {
     def validate(bi: BigInt): ValidationResult[BigInt] = ValidationResult.Valid(bi)
   }
 
-  /** Pass-through validator for BigDecimal. Always returns Valid.
-    *
-    * @note
-    *   Scala's `BigDecimal` often relies on a `MathContext,` and representing constraints like
-    *   finiteness or precision is complex for a default validator. Therefore, this default
-    *   validator is pass-through. Users needing specific precision, range, or other checks for
-    *   `BigDecimal` should define a custom `Validator[BigDecimal]` instance.
-    * @return
-    *   A Validator[BigDecimal] that always returns Valid.
-    */
-  given bigDecimalValidator: Validator[BigDecimal] with {
+  inline given bigDecimalValidator: Validator[BigDecimal] with {
     def validate(bd: BigDecimal): ValidationResult[BigDecimal] = ValidationResult.Valid(bd)
   }
 
-  /** Pass-through validator for Symbol. Always returns Valid. */
-  given symbolValidator: Validator[Symbol] with {
+  inline given symbolValidator: Validator[Symbol] with {
     def validate(s: Symbol): ValidationResult[Symbol] = ValidationResult.Valid(s)
   }
 
-  /** ==Default Validators for Common Java Types==
-    *
-    * This section provides default, pass-through `Validator` instances for Java types that are
-    * frequently encountered in Scala data models, particularly within case classes used with
-    * `deriveValidatorMacro`.
-    *
-    * @note
-    *   Rationale for Inclusion and Behavior:
-    *   - **Ubiquity: ** These types (`java.util.UUID`, core `java.time.*`) are chosen because of
-    *     their extremely common usage in Scala applications.
-    *   - **Derivation Support: ** Providing these instances prevents compilation errors when
-    *     deriving validators for case classes containing these types, reducing boilerplate for the
-    *     user.
-    *   - **Pass-Through Logic: ** These validators are simple "pass-through" validators (they
-    *     always return `ValidationResult.Valid(value)`). They do not impose any validation rules
-    *     beyond what the type system enforces.
-    *   - **Extensibility: ** Users requiring specific validation logic for these types (e.g.,
-    *     checking the UUID version, ensuring an `Instant` is in the past) should define their own
-    *     custom `given Validator[...]` instance, which will take precedence over these defaults
-    *     according to implicit resolution rules.
-    */
-
-  /** Pass-through validator for java.util.UUID. Always returns Valid. */
-  given uuidValidator: Validator[UUID] with {
+  inline given uuidValidator: Validator[UUID] with {
     def validate(v: UUID): ValidationResult[UUID] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.Instant. Always returns Valid. */
-  given instantValidator: Validator[Instant] with {
+  inline given instantValidator: Validator[Instant] with {
     def validate(v: Instant): ValidationResult[Instant] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.LocalDate. Always returns Valid. */
-  given localDateValidator: Validator[LocalDate] with {
+  inline given localDateValidator: Validator[LocalDate] with {
     def validate(v: LocalDate): ValidationResult[LocalDate] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.LocalTime. Always returns Valid. */
-  given localTimeValidator: Validator[LocalTime] with {
+  inline given localTimeValidator: Validator[LocalTime] with {
     def validate(v: LocalTime): ValidationResult[LocalTime] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.LocalDateTime. Always returns Valid. */
-  given localDateTimeValidator: Validator[LocalDateTime] with {
+  inline given localDateTimeValidator: Validator[LocalDateTime] with {
     def validate(v: LocalDateTime): ValidationResult[LocalDateTime] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.ZonedDateTime. Always returns Valid. */
-  given zonedDateTimeValidator: Validator[ZonedDateTime] with {
+  inline given zonedDateTimeValidator: Validator[ZonedDateTime] with {
     def validate(v: ZonedDateTime): ValidationResult[ZonedDateTime] = ValidationResult.Valid(v)
   }
 
-  /** Pass-through validator for java.time.Duration. Always returns Valid. */
-  given durationValidator: Validator[Duration] with {
+  inline given durationValidator: Validator[Duration] with {
     def validate(v: Duration): ValidationResult[Duration] = ValidationResult.Valid(v)
   }
 
@@ -422,12 +378,6 @@ object Validator {
     *
     * Derivation is recursive, validating each field using implicitly available validators. Errors
     * from nested fields are aggregated and annotated with clear field context.
-    *
-    * Example usage:
-    * {{{
-    *   case class User(name: String, age: Int)
-    *   given Validator[User] = deriveValidatorMacro
-    * }}}
     *
     * @tparam T
     *   case class type to derive validator for
@@ -443,89 +393,94 @@ object Validator {
     m: Expr[Mirror.ProductOf[T]]
   )(using q: Quotes): Expr[Validator[T]] = {
     import q.reflect.*
-    if !(TypeRepr.of[Elems] <:< TypeRepr.of[Tuple]) then
-      report.errorAndAbort(s"deriveValidatorMacro: Expected Elems to be a Tuple type, but got ${Type.show[Elems]}")
+
+    val fieldValidators: List[Expr[Validator[Any]]] = summonValidators[Elems]
+    val fieldLabels: List[String] = getLabels[Labels]
+    val isOptionList: List[Boolean] = getIsOptionFlags[Elems]
+
+    val validatorsExpr: Expr[Seq[Validator[Any]]] = Expr.ofSeq(fieldValidators)
+    val fieldLabelsExpr: Expr[List[String]] = Expr(fieldLabels)
+    val isOptionListExpr: Expr[List[Boolean]] = Expr(isOptionList)
 
     '{
       new Validator[T] {
         def validate(a: T): ValidationResult[T] = {
-          val productResult: Either[ValidationError, Product] = a match {
-            case product: Product => Right(product)
-            case other => Left(ValidationErrors.ValidationError(s"Expected Product type, got ${other.getClass}"))
-          }
+          a match {
+            case product: Product =>
+              val validators = ${ validatorsExpr }
+              val labels = ${ fieldLabelsExpr }
+              val isOptionFlags = ${ isOptionListExpr }
 
-          productResult match {
-            case Left(error) => ValidationResult.invalid(error)
-            case Right(product) =>
-              val elems: Elems = MacroHelpers.upcastTo[Elems](Tuple.fromProduct(product))
-              val labels: Labels = constValueTuple[Labels]
-              val validatedElemsResult: ValidationResult[Elems] = ${
-                validateTupleWithLabelsMacro[Elems, Labels]('{ elems }, '{ labels })
+              val results = product.productIterator.zipWithIndex.map { case (fieldValue, i) =>
+                val label = labels(i)
+                val isOption = isOptionFlags(i)
+
+                if (Option(fieldValue).isEmpty && !isOption) {
+                  ValidationResult.invalid(
+                    ValidationError(
+                      message = s"Field '$label' must not be null.",
+                      fieldPath = List(label),
+                      expected = Some("non-null value"),
+                      actual = Some("null")
+                    )
+                  )
+                } else {
+                  val validator = validators(i)
+                  validator.validate(fieldValue) match {
+                    case ValidationResult.Valid(v) => ValidationResult.Valid(v)
+                    case ValidationResult.Invalid(errs) =>
+                      val fieldTypeName = Option(fieldValue).map(_.getClass.getSimpleName).getOrElse("null")
+                      ValidationResult.Invalid(errs.map(_.annotateField(label, fieldTypeName)))
+                  }
+                }
+              }.toList
+
+              val allErrors = results.collect { case ValidationResult.Invalid(e) => e }.flatten.toVector
+              if (allErrors.isEmpty) {
+                val validValues = results.collect { case ValidationResult.Valid(v) => v }
+                ValidationResult.Valid($m.fromProduct(Tuple.fromArray(validValues.toArray)))
+              } else {
+                ValidationResult.Invalid(allErrors)
               }
-              validatedElemsResult.map { validatedElems => $m.fromProduct(validatedElems) }
           }
         }
       }
     }
   }
 
-  private def validateTupleWithLabelsMacro[Elems <: Tuple: Type, Labels <: Tuple: Type](
-    values: Expr[Elems],
-    labels: Expr[Labels]
-  )(using q: Quotes): Expr[ValidationResult[Elems]] = {
+  private def summonValidators[Elems <: Tuple: Type](using q: Quotes): List[Expr[Validator[Any]]] = {
     import q.reflect.*
-    (TypeRepr.of[Elems].dealias, TypeRepr.of[Labels].dealias) match {
-      case (elemsType, _) if elemsType <:< TypeRepr.of[EmptyTuple] =>
-        '{ ValidationResult.Valid(MacroHelpers.upcastTo[Elems](EmptyTuple)) }
-      case (elemsRepr, labelsRepr) =>
-        elemsRepr.asType match {
-          case '[h *: tElems] =>
-            labelsRepr.asType match {
-              case '[String *: tLabels] =>
-                val headTypeRepr: TypeRepr = TypeRepr.of[h]
-                val typeSymbol: Symbol = headTypeRepr.typeSymbol
-                val fieldTypeNameString: String = typeSymbol.name
-                val fieldTypeNameExpr: Expr[String] = Expr(fieldTypeNameString)
-                val isOption = TypeRepr.of[h] <:< TypeRepr.of[Option[Any]]
-                val isOptionExpr: Expr[Boolean] = Expr(isOption)
-                '{
-                  val rawHead = $values.head
-                  if (Option(MacroHelpers.upcastTo[Any](rawHead)).isEmpty && !${ isOptionExpr }) {
-                    val headLabelNull: String = Option(MacroHelpers.upcastTo[String]($labels.head)).getOrElse("unknown")
-                    val nullError = ValidationErrors.ValidationError(
-                      message = s"Field '$headLabelNull' must not be null.",
-                      fieldPath = List(headLabelNull),
-                      expected = Some("non-null value"),
-                      actual = Some("null")
-                    )
-                    ValidationResult.invalid(nullError)
-                  } else {
-                    val head: h = MacroHelpers.castValue[h](rawHead)
-                    val tail: tElems = MacroHelpers.upcastTo[tElems]($values.tail)
-                    val headLabel: String = Option(MacroHelpers.upcastTo[String]($labels.head)).getOrElse("unknown")
-                    val tailLabels: tLabels = Option(MacroHelpers.upcastTo[tLabels]($labels.tail))
-                      .getOrElse(MacroHelpers.upcastTo[tLabels](EmptyTuple))
-                    val fieldTypeNameValue: String = ${ fieldTypeNameExpr }
-                    val headValidation: ValidationResult[h] =
-                      summonInline[Validator[h]].validate(head) match {
-                        case ValidationResult.Valid(v) => ValidationResult.Valid(v)
-                        case ValidationResult.Invalid(errs) =>
-                          ValidationResult.Invalid(
-                            errs.map(e => e.annotateField(headLabel, fieldTypeNameValue))
-                          )
-                      }
-                    val tailValidation: ValidationResult[tElems] = ${
-                      validateTupleWithLabelsMacro[tElems, tLabels]('{ tail }, '{ tailLabels })
-                    }
-                    headValidation.zip(tailValidation).map { case (hValidated, tValidated) =>
-                      MacroHelpers.upcastTo[Elems](hValidated *: tValidated)
-                    }
-                  }
-                }
-              case _ => report.errorAndAbort("Labels tuple...")
-            }
-          case _ => report.errorAndAbort("Unsupported elements tuple type...")
+    Type.of[Elems] match {
+      case '[EmptyTuple] => Nil
+      case '[h *: t] =>
+        val validatorExpr = Expr.summon[Validator[h]].getOrElse {
+          report.errorAndAbort(s"Could not find a given Validator for type ${Type.show[h]}")
         }
+        '{ MacroHelper.upcastTo[Validator[Any]](${ validatorExpr }) } :: summonValidators[t]
+    }
+  }
+
+  private def getLabels[Labels <: Tuple: Type](using q: Quotes): List[String] = {
+    import q.reflect.*
+    def loop(tpe: TypeRepr): List[String] = tpe.dealias match {
+      case AppliedType(_, List(head, tail)) =>
+        head match {
+          case ConstantType(StringConstant(label)) => label :: loop(tail)
+          case _ => report.errorAndAbort(s"Macro error: Expected a literal string for a label, but got ${head.show}")
+        }
+      case t if t =:= TypeRepr.of[EmptyTuple] => Nil
+      case _ => report.errorAndAbort(s"Macro error: The labels tuple was not structured as expected: ${tpe.show}")
+    }
+
+    loop(TypeRepr.of[Labels])
+  }
+
+  private def getIsOptionFlags[Elems <: Tuple: Type](using q: Quotes): List[Boolean] = {
+    import q.reflect.*
+    Type.of[Elems] match {
+      case '[EmptyTuple] => Nil
+      case '[h *: t] =>
+        (TypeRepr.of[h] <:< TypeRepr.of[Option[Any]]) :: getIsOptionFlags[t]
     }
   }
 }

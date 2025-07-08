@@ -1,13 +1,9 @@
-// ===== Imports =====
 import xerial.sbt.Sonatype.autoImport.*
 import xerial.sbt.Sonatype.{sonatypeCentralHost, sonatypeSettings}
 enablePlugins(SbtPgp)
-
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalanativecrossproject.ScalaNativeCrossPlugin.autoImport.*
 import scala.scalanative.build.*
-
-// mdoc documentation plugin
 import _root_.mdoc.MdocPlugin
 
 // ===== Build‑wide Settings =====
@@ -64,6 +60,10 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     name := "valar-core",
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
+    // --- MiMa & TASTy-MiMa Configuration ---
+    mimaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8"),
+    tastyMiMaPreviousArtifacts := Set(organization.value %% name.value % "0.4.8"),
+    // --- Library Dependencies ---
     libraryDependencies ++= Seq(
       "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
       "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
@@ -73,8 +73,12 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
   .jvmSettings(
     mdocIn := file("docs-src"),
     mdocOut := file("."),
+    // --- Updated Check Command ---
     addCommandAlias("prepare", "scalafixAll; scalafmtAll; scalafmtSbt"),
-    addCommandAlias("check", "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck")
+    addCommandAlias(
+      "check",
+      "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; mimaReportBinaryIssues; tastyMiMaReportIssues"
+    )
   )
   .jvmConfigure(_.enablePlugins(MdocPlugin))
   .nativeSettings(
@@ -93,6 +97,8 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     name := "valar-munit",
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
+    mimaPreviousArtifacts := Set.empty,
+    tastyMiMaPreviousArtifacts := Set.empty,
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )
   .nativeSettings(
