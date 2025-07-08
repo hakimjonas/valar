@@ -1,8 +1,8 @@
 package net.ghoula.valar.translator
 
-import munit.FunSuite
 import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.ValidationResult
+import net.ghoula.valar.munit.ValarSuite
 
 /** Provides a comprehensive test suite for the [[Translator]] typeclass and its associated
   * `translateErrors` extension method.
@@ -16,13 +16,10 @@ import net.ghoula.valar.ValidationResult
   * guarantees that the translation is not applied recursively to nested child errors, maintaining
   * the original state of the error hierarchy.
   */
-class TranslatorSpec extends FunSuite {
+class TranslatorSpec extends ValarSuite {
 
   test("translateErrors on a Valid result should return the instance unchanged") {
-    given failingTranslator: Translator = (error: ValidationError) => {
-      fail(s"Translator should not be invoked for a Valid result, but was called for: ${error.message}")
-      "" // This line is unreachable but required for type correctness
-    }
+    given Translator = error => fail(s"Translator should not be invoked, but was called for: ${error.message}")
 
     val validResult = ValidationResult.Valid("all good")
     val result = validResult.translateErrors()
@@ -31,7 +28,7 @@ class TranslatorSpec extends FunSuite {
   }
 
   test("translateErrors on an Invalid result should translate messages and preserve all other properties") {
-    given testTranslator: Translator = (error: ValidationError) => s"translated: ${error.message}"
+    given Translator = error => s"translated: ${error.message}"
 
     val originalError = ValidationError(
       message = "A test error",
@@ -46,36 +43,43 @@ class TranslatorSpec extends FunSuite {
 
     val translatedResult = invalidResult.translateErrors()
 
-    translatedResult match {
-      case ValidationResult.Valid(_) => fail("Expected an Invalid result but got a Valid one.")
-      case ValidationResult.Invalid(Vector(translatedError)) =>
-        assertEquals(translatedError.message, "translated: A test error")
-        assertEquals(translatedError.fieldPath, originalError.fieldPath)
-        assertEquals(translatedError.children, originalError.children)
-        assertEquals(translatedError.code, originalError.code)
-        assertEquals(translatedError.severity, originalError.severity)
-        assertEquals(translatedError.expected, originalError.expected)
-        assertEquals(translatedError.actual, originalError.actual)
-      case _ => fail("Expected an Invalid result with a single error.")
+    assertHasOneError(translatedResult) { translatedError =>
+      assertEquals(translatedError.message, "translated: A test error")
+      assertEquals(translatedError.fieldPath, originalError.fieldPath)
+      assertEquals(translatedError.children, originalError.children)
+      assertEquals(translatedError.code, originalError.code)
+      assertEquals(translatedError.severity, originalError.severity)
+      assertEquals(translatedError.expected, originalError.expected)
+      assertEquals(translatedError.actual, originalError.actual)
     }
   }
 
+  test("translateErrors should correctly translate multiple errors in an Invalid result") {
+    given Translator = error => s"translated: ${error.message}"
+
+    val error1 = ValidationError("First error")
+    val error2 = ValidationError("Second error")
+    val invalidResult = ValidationResult.Invalid(Vector(error1, error2))
+
+    val translatedResult = invalidResult.translateErrors()
+
+    assertHasNErrors(translatedResult, 2)(translatedErrors =>
+      assertEquals(translatedErrors.map(_.message), Vector("translated: First error", "translated: Second error"))
+    )
+  }
+
   test("translateErrors should not apply translation recursively to nested child errors") {
-    given testTranslator: Translator = (error: ValidationError) => s"translated: ${error.message}"
+    given Translator = error => s"translated: ${error.message}"
 
     val childError = ValidationError("This is a child error")
     val parentError = ValidationError("This is a parent error", children = Vector(childError))
     val invalidResult = ValidationResult.invalid(parentError)
-
     val translatedResult = invalidResult.translateErrors()
 
-    translatedResult match {
-      case ValidationResult.Valid(_) => fail("Expected an Invalid result but got a Valid one.")
-      case ValidationResult.Invalid(Vector(translatedParent)) =>
-        assertEquals(translatedParent.message, "translated: This is a parent error")
-        assertEquals(translatedParent.children.headOption, Some(childError))
-        assertEquals(translatedParent.children.head.message, "This is a child error")
-      case _ => fail("Expected an Invalid result with a single parent error.")
+    assertHasOneError(translatedResult) { translatedParent =>
+      assertEquals(translatedParent.message, "translated: This is a parent error")
+      assertEquals(translatedParent.children.headOption, Some(childError))
+      assertEquals(translatedParent.children.head.message, "This is a child error")
     }
   }
 }

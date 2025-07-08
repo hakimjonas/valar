@@ -118,7 +118,7 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
 lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("valar-translator"))
-  .dependsOn(valarCore)
+  .dependsOn(valarCore, valarMunit % Test)
   .settings(sonatypeSettings *)
   .settings(
     name := "valar-translator",
@@ -140,7 +140,6 @@ lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
   .nativeSettings(
     testFrameworks += new TestFramework("munit.Framework")
   )
-
 // ===== Convenience Aliases =====
 lazy val valarCoreJVM = valarCore.jvm
 lazy val valarCoreNative = valarCore.native
