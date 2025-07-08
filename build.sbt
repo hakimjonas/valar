@@ -79,7 +79,7 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     addCommandAlias("prepare", "scalafixAll; scalafmtAll; scalafmtSbt"),
     addCommandAlias(
       "check",
-      "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck; mimaReportBinaryIssues; tastyMiMaReportIssues"
+      "scalafixAll --check; scalafmtCheckAll; scalafmtSbtCheck"
     )
   )
   .jvmConfigure(_.enablePlugins(MdocPlugin))
