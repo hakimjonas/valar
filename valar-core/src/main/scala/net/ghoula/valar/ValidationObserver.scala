@@ -13,8 +13,8 @@ import net.ghoula.valar.ValidationResult
   *   - Create specialized behaviors without modifying validation logic
   *
   * @see
-  *   [[ValidationObserver.noOpObserver]] for the default, zero-overhead implementation used
-  *   when no custom observer is provided.
+  *   [[ValidationObserver.noOpObserver]] for the default, zero-overhead implementation used when no
+  *   custom observer is provided.
   *
   * ==Architectural Pattern==
   *
