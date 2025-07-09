@@ -4,9 +4,7 @@
 [![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
-metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
-detailed error messages useful for debugging or user feedback.
+Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured, detailed error messages useful for debugging or user feedback.
 
 ## **✨ What's New in 0.5.X**
 
@@ -15,37 +13,64 @@ detailed error messages useful for debugging or user feedback.
 * **🧪 Enhanced ValarSuite**: Updated testing utilities in `valar-munit` now used in `valar-translator` for more robust validation testing.
 * **⚡ Reworked Macros**: Simpler, more performant, and more modern macro implementations for better compile-time validation.
 * **🛡️ MiMa Checks**: Added binary compatibility verification to ensure smooth upgrades between versions.
-* **📚 Improved Documentation**: Comprehensive updates to scaladoc and module-level README files for better developer experience.
+* **📚 Improved Documentation**: Comprehensive updates to scaladoc and module-level README files for a better developer experience.
 
 ## **Key Features**
 
-* **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using
-  ValidationResult\[A\]. Eliminate runtime errors caused by unexpected validation states.
-* **Minimal Boilerplate:** Derive Validator instances automatically for case classes using compile-time macros,
-  significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
+* **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using ValidationResult[A]. Eliminate runtime errors caused by unexpected validation states.
+* **Minimal Boilerplate:** Derive Validator instances automatically for case classes using compile-time macros, significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
 * **Flexible Error Handling:** Choose the strategy that fits your use case:
-    * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in
-      UIs or API responses).
-    * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
-* **Actionable Error Reports:** Generate detailed ValidationError objects containing precise field paths, validation
-  rule specifics (like expected vs. actual values), and optional codes/severity.
-* **Named Tuple Support:** Field-aware error messages for Scala 3.7's named tuples, with preserved backward
-  compatibility.
-* **Scala 3 Idiomatic:** Built specifically for Scala 3, embracing features like extension methods, given instances,
-  opaque types, and macros for a modern, expressive API.
+  * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in UIs or API responses).
+  * **Fail-Fast**: Stop validation immediately on the first failure, suitable for performance-sensitive pipelines.
+* **Actionable Error Reports:** Generate detailed ValidationError objects containing precise field paths, validation rule specifics (like expected vs. actual values), and optional codes/severity.
+* **Named Tuple Support:** Field-aware error messages for Scala 3.7's named tuples, with preserved backward compatibility.
+* **Scala 3 Idiomatic:** Built specifically for Scala 3, embracing features like extension methods, given instances, opaque types, and macros for a modern, expressive API.
+
+## **Extensibility Pattern**
+
+Valar is designed to be extensible through the **ValidationObserver pattern**, which provides a clean, type-safe way to integrate with external systems without modifying the core validation logic.
+
+### The ValidationObserver Pattern
+
+The `ValidationObserver` trait serves as the foundational pattern for extending Valar with cross-cutting concerns:
+
+```scala
+trait ValidationObserver {
+  def onResult[A](result: ValidationResult[A]): Unit
+}
+```
+
+This pattern offers several advantages:
+
+* **Zero Overhead**: When using the default no-op observer, the compiler eliminates all observer-related code
+* **Non-Intrusive**: Observes validation results without altering the validation flow
+* **Composable**: Works seamlessly with other Valar features and can be chained
+* **Type-Safe**: Leverages Scala's type system for compile-time safety
+
+### Examples of Extensions Using This Pattern
+
+Current implementations are following this pattern:
+- **Logging**: Log validation outcomes for debugging and monitoring
+- **Metrics**: Collect validation statistics for performance analysis
+- **Auditing**: Track validation events for compliance and security
+
+Future extensions planned:
+- **valar-cats-effect**: Async validation with IO-based observers
+- **valar-zio**: ZIO-based validation with resource management
+- **Context-aware validation**: Observers that can access request-scoped data
 
 ## **Available Artifacts**
 
 Valar provides artifacts for both JVM and Scala Native platforms:
 
-| Module          | Platform | Artifact ID                   | Maven Central                                                                                                                                                                                                    |
-|-----------------|----------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Core**        | JVM      | valar-core_3                  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 |
-| **Core**        | Native   | valar-core_native0.5_3        | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             |
-| **MUnit**       | JVM      | valar-munit_3                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               |
-| **MUnit**       | Native   | valar-munit_native0.5_3       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           |
-| **Translator**  | JVM      | valar-translator_3            | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     |
-| **Translator**  | Native   | valar-translator_native0.5_3  | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) |
+| Module         | Platform | Artifact ID                  | Maven Central                                                                                                                                                                                                    |
+|----------------|----------|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Core**       | JVM      | valar-core_3                 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)                                 |
+| **Core**       | Native   | valar-core_native0.5_3       | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_native0.5_3)             |
+| **MUnit**      | JVM      | valar-munit_3                | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_3)                               |
+| **MUnit**      | Native   | valar-munit_native0.5_3      | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-munit_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-munit_native0.5_3)           |
+| **Translator** | JVM      | valar-translator_3           | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_3)                     |
+| **Translator** | Native   | valar-translator_native0.5_3 | [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-translator_native0.5_3?label=latest&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-translator_native0.5_3) |
 
 > **Note:** When using the `%%%` operator in sbt, the correct platform-specific artifact will be selected automatically.
 
@@ -104,15 +129,13 @@ result match {
 
 ## **Testing with valar-munit**
 
-The optional valar-munit module provides ValarSuite, a trait that offers powerful, validation-specific assertions to
-make your tests clean and expressive.
+The optional valar-munit module provides ValarSuite, a trait that offers powerful, validation-specific assertions to make your tests clean and expressive.
 
 ```scala
 import net.ghoula.valar.*
 import net.ghoula.valar.munit.ValarSuite
 
 class UserValidationSuite extends ValarSuite {
-
   // A given Validator for User must be in scope
   given Validator[User] = Validator.deriveValidatorMacro
 
@@ -124,7 +147,6 @@ class UserValidationSuite extends ValarSuite {
 
   test("a single validation error should be reported correctly") {
     val result = Validator[User].validate(User("", Some(25)))
-
     // Use assertHasOneError for the common case of a single error
     assertHasOneError(result) { error =>
       assertEquals(error.fieldPath, List("name"))
@@ -134,7 +156,6 @@ class UserValidationSuite extends ValarSuite {
 
   test("multiple validation errors should be accumulated") {
     val result = Validator[User].validate(User("", Some(-10)))
-
     // Use assertInvalid for testing error accumulation
     assertInvalid(result) { errors =>
       assertEquals(errors.size, 2)
@@ -185,32 +206,29 @@ trait Validator[A] {
 
 Validators can be automatically derived for case classes using deriveValidatorMacro.
 
-**Important Note on Derivation:** Automatic derivation with deriveValidatorMacro requires implicit Validator instances
-to be available in scope for **all** field types within the case class. If a validator for any field type is missing, 
-**compilation will fail**. This strictness ensures that all fields are explicitly considered during validation. See the
-"Built-in Validators" section for types supported out-of-the-box.
+**Important Note on Derivation:** Automatic derivation with deriveValidatorMacro requires implicit Validator instances to be available in scope for **all** field types within the case class. If a validator for any field type is missing, **compilation will fail**. This strictness ensures that all fields are explicitly considered during validation. See the "Built-in Validators" section for types supported out-of-the-box.
 
 ## **Built-in Validators**
 
-Valar provides given Validator instances out-of-the-box for many common types to ease setup and support derivation. This
-includes:
+Valar provides given Validator instances out-of-the-box for many common types to ease setup and support derivation. This includes:
 
-* **Scala Primitives:** Int (non-negative), String (non-empty), Boolean, Long, Double (finite), Float (finite), Byte,
-  Short, Char, Unit.
+* **Scala Primitives:** Int (non-negative), String (non-empty), Boolean, Long, Double (finite), Float (finite), Byte, Short, Char, Unit.
 * **Other Scala Types:** BigInt, BigDecimal, Symbol.
-* **Common Java Types:** java.util.UUID, java.time.Instant, java.time.LocalDate, java.time.LocalDateTime,
-  java.time.ZonedDateTime, java.time.LocalTime, java.time.Duration.
-* **Standard Collections:** Option, List, Vector, Seq, Set, Array, ArraySeq, Map (provided validators exist for their
-  element/key/value types).
+* **Common Java Types:** java.util.UUID, java.time.Instant, java.time.LocalDate, java.time.LocalDateTime, java.time.ZonedDateTime, java.time.LocalTime, java.time.Duration.
+* **Standard Collections:** Option, List, Vector, Seq, Set, Array, ArraySeq, Map (provided validators exist for their element/key/value types).
 * **Tuple Types:** Named tuples and regular tuples.
 * **Intersection (&) and Union (|) Types:** Provided corresponding validators for the constituent types exist.
 
-Most built-in validators for scalar types (excluding those with obvious constraints like Int, String, Float, Double) are
-**pass-through** validators. You should define custom validators if you need specific constraints for these types.
+Most built-in validators for scalar types (excluding those with obvious constraints like Int, String, Float, Double) are **pass-through** validators. You should define custom validators if you need specific constraints for these types.
 
-## **ValidationObserver**
+## **ValidationObserver, The Core Extensibility Pattern**
 
-The `ValidationObserver` trait provides a powerful mechanism to decouple validation logic from cross-cutting concerns such as logging, metrics collection, or auditing:
+The `ValidationObserver` trait is more than just a logging mechanism—it's the **foundational pattern** for extending Valar with custom functionality. This pattern allows you to:
+
+- **Integrate with external systems** (logging, metrics, monitoring)
+- **Add side effects** without modifying validation logic
+- **Build composable extensions** that work together seamlessly
+- **Maintain zero overhead** when extensions aren't needed
 
 ```scala
 import net.ghoula.valar.*
@@ -234,7 +252,26 @@ val result = User.validate(user)
   .map(_.toUpperCase)
 ```
 
+### Building Custom Extensions
+
+When building extensions for Valar, follow the ValidationObserver pattern:
+
+```scala
+// Your custom extension trait
+trait MyCustomExtension extends ValidationObserver {
+  def onResult[A](result: ValidationResult[A]): Unit = {
+    // Your custom logic here
+  }
+}
+
+// Usage remains clean and composable
+val result = User.validate(user)
+  .observe()  // Uses your custom extension
+  .map(processUser)
+```
+
 Key features of ValidationObserver:
+
 * **Zero Overhead**: When using the default no-op observer, the compiler eliminates all observer-related code
 * **Non-Intrusive**: Observes validation results without altering the validation flow
 * **Chainable**: Works seamlessly with other operations in the validation pipeline
@@ -263,7 +300,7 @@ given myTranslator: Translator with {
     // The `.getOrElse` provides a safe fallback.
     translations.getOrElse(
       error.key.getOrElse("error.unknown"),
-      error.message // Fall back to the original message if key is not found
+      error.message // Fall back to the original message if the key is not found
     )
   }
 }
@@ -275,6 +312,7 @@ val result = User.validate(user)
 ```
 
 The `valar-translator` module is designed to:
+
 * Integrate with any i18n library through the `Translator` typeclass
 * Compose cleanly with other Valar features like ValidationObserver
 * Provide a clear separation between validation logic and presentation concerns
@@ -295,7 +333,7 @@ To upgrade to v0.5.0, update your build.sbt:
 // Update core library
 libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
 
-// Add optional translator module (if needed)
+// Add the optional translator module (if needed)
 libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
 
 // Update testing utilities (if used)
@@ -309,22 +347,21 @@ Your existing validation code will continue to work without any changes.
 The main breaking change in v0.4.0 was the **artifact name change** from valar to valar-core to support the modular architecture.
 
 1. **Update build.sbt**:
-   ```scala
-   // Replace this:
-   libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 
-   // With this (note the triple %%% for cross-platform support):
-   libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
-   ```
+```scala
+// Replace this:
+libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
+
+// With this (note the triple %%% for cross-platform support):
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
+```
 
 ## **Compatibility**
 
 * **Scala:** 3.7+
 * **Platforms:** JVM, Scala Native
-* **Dependencies:** valar-core has a Compile dependency on `io.github.cquiroz:scala-java-time` to provide robust,
-  cross-platform support for the `java.time` API.
+* **Dependencies:** valar-core has a Compile dependency on `io.github.cquiroz:scala-java-time` to provide robust, cross-platform support for the `java.time` API.
 
 ## **License**
 
-Valar is licensed under the **MIT License**. See the [LICENSE](https://github.com/hakimjonas/valar/blob/main/LICENSE)
-file for details.
+Valar is licensed under the **MIT License**. See the [LICENSE](https://github.com/hakimjonas/valar/blob/main/LICENSE) file for details.

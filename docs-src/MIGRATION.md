@@ -27,7 +27,15 @@ Your existing validation code will continue to work without any changes.
 
 ### Using the New Features
 
-#### ValidationObserver
+#### Core Extensibility Pattern (ValidationObserver)
+
+The ValidationObserver pattern has been added to valar-core as the **standard way to extend Valar**. This pattern provides:
+
+* A consistent API for integrating with external systems
+* Zero-cost abstractions when extensions aren't used
+* Type-safe composition with other Valar features
+
+Future Valar modules (like valar-cats-effect and valar-zio) will build upon this pattern, making it the **recommended approach** for anyone building custom Valar extensions.
 
 The ValidationObserver trait allows you to observe validation results without altering the flow:
 
@@ -43,13 +51,22 @@ given loggingObserver: ValidationObserver with {
     case ValidationResult.Valid(_) => 
       logger.info("Validation succeeded")
     case ValidationResult.Invalid(errors) => 
-      logger.warn(s"Validation failed with ${errors.size} errors")
+      logger.warn(s"Validation failed with ${errors.size} errors: ${errors.map(_.message).mkString(", ")}")
   }
 }
 
 // Use the observer in your validation flow
-val result = User.validate(user).observe()
+val result = User.validate(user)
+  .observe()  // The observer's onResult is called here
+  .map(_.toUpperCase)
 ```
+
+Key features of ValidationObserver:
+
+* **Zero Overhead**: When using the default no-op observer, the compiler eliminates all observer-related code
+* **Non-Intrusive**: Observes validation results without altering the validation flow
+* **Chainable**: Works seamlessly with other operations in the validation pipeline
+* **Flexible**: Can be used for logging, metrics, alerting, or any other side effect
 
 #### valar-translator
 
@@ -80,13 +97,20 @@ given myTranslator: Translator with {
 }
 
 // Use the translator in your validation flow
-val result = User.validate(user).translateErrors()
+val result = User.validate(user)
+  .observe()  // Optional: observe the raw result first
+  .translateErrors()  // Translate errors for user presentation
 ```
+
+The `valar-translator` module is designed to:
+
+* Integrate with any i18n library through the `Translator` typeclass
+* Compose cleanly with other Valar features like ValidationObserver
+* Provide a clear separation between validation logic and presentation concerns
 
 ## Migrating from v0.3.0 to v0.4.8
 
-The main breaking change since v0.4.0 is the artifact name has changed from valar to valar-core to support the new modular
-architecture.
+The main breaking change in v0.4.0 was the **artifact name change** from valar to valar-core to support the new modular architecture.
 
 ### Update build.sbt:
 
