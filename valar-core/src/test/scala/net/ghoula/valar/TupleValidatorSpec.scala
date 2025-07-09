@@ -25,11 +25,11 @@ class TupleValidatorSpec extends FunSuite {
 
   /** Tuple validator for regular tuples. */
   private given tupleValidator[A, B](using va: Validator[A], vb: Validator[B]): Validator[(A, B)] =
-    Validator.deriveValidatorMacro
+    Validator.derive
 
   /** Named tuple validator using automatic derivation. */
   private given namedTupleValidator: Validator[(name: String, age: Int)] =
-    Validator.deriveValidatorMacro
+    Validator.derive
 
   test("Regular tuples should be validated with default validators") {
     val validTuple = ("hello", 42)

@@ -7,7 +7,7 @@ import scala.collection.immutable.ArraySeq
 import net.ghoula.valar.ErrorAccumulator
 import net.ghoula.valar.ValidationErrors.{ValidationError, ValidationException}
 import net.ghoula.valar.ValidationHelpers.*
-import net.ghoula.valar.Validator.deriveValidatorMacro
+import net.ghoula.valar.Validator.derive
 
 /** Comprehensive test suite for Valar's validation system.
   *
@@ -50,16 +50,16 @@ class ValidationSpec extends FunSuite {
   /** Test case classes for macro derivation testing. */
 
   private case class User(name: String, age: Option[Int])
-  private given Validator[User] = deriveValidatorMacro
+  private given Validator[User] = derive
 
   private case class Address(street: String, city: String, zip: Int)
-  private given Validator[Address] = deriveValidatorMacro
+  private given Validator[Address] = derive
 
   private case class Company(name: String, address: Address, ceo: Option[User])
-  private given Validator[Company] = deriveValidatorMacro
+  private given Validator[Company] = derive
 
   private case class NullFieldTest(name: String, age: Int)
-  private given Validator[NullFieldTest] = deriveValidatorMacro
+  private given Validator[NullFieldTest] = derive
 
   /** Tests for collection type validators. */
 
