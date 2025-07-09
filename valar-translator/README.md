@@ -58,27 +58,41 @@ val translatedResult = result.translateErrors()
 // translatedResult now contains errors with localized messages
 ```
 
-## Composing with Core Features (like ValidationObserver)
+## Integration with the ValidationObserver Extensibility Pattern
 
-The `valar-translator` module is designed to compose cleanly with features from the core library. A prime example is the **`ValidationObserver` pattern**, a general-purpose tool for side effects (like logging or metrics) that is **available directly in `valar-core`**.
+The `valar-translator` module is built to work seamlessly with Valar's extensibility system, specifically the **ValidationObserver pattern** that forms the foundation for all Valar extensions.
 
-While the two patterns serve different purposes, they can be chained together for a powerful workflow:
+This architectural alignment means that the translator module integrates naturally with other extensions that follow the same pattern:
 
-* **`ValidationObserver` (Side Effect)**: Reacts to a result without changing it.
-* **`Translator` (Data Transformation)**: Refines a result by localizing error messages.
+* **ValidationObserver Pattern (from `valar-core`)**: The foundation for all extensions, enabling side effects without changing the validation result
+* **Translator (from `valar-translator`)**: Built on top of the core pattern, transforming validation errors for localization
+
+While these serve different purposes, they're designed to work together in a clean, composable way:
 
 A common workflow is to first use the `ValidationObserver` to log or collect metrics on the raw, untranslated error, and then use the `Translator` to prepare the error for user presentation.
 
 ```scala
-// Given a defined `metricsObserver` from your application
-// and a `myTranslator` from this module...
+// Given a defined extension using the ValidationObserver pattern
+given metricsObserver: ValidationObserver with {
+  def onResult[A](result: ValidationResult[A]): Unit = {
+    // Record validation metrics to your monitoring system
+  }
+}
 
+// And a translator implementation for localization
+given myTranslator: Translator with {
+  def translate(error: ValidationError): String = {
+    // Translate errors using your i18n system
+  }
+}
+
+// Both extensions work together through the same pattern
 val result = User.validate(invalidUser)
-  // 1. First, observe the raw result using the core ValidationObserver.
-  .observe()
-  // 2. Then, translate the errors for presentation using the Translator.
+  // First, observe the raw result using the core ValidationObserver pattern
+  .observe()  
+  // Then, translate the errors for presentation (also built on the same pattern)
   .translateErrors()
 
-// The final `result` contains user-friendly, translated messages,
-// while the original, structured error was sent to your metrics system.
+// This demonstrates how all Valar extensions follow the same architectural pattern,
+// allowing them to compose together seamlessly
 ```
