@@ -37,11 +37,11 @@ val translations: Map[String, String] = Map(
 // --- Implementation of the Translator trait ---
 given myTranslator: Translator with {
   def translate(error: ValidationError): String = {
-    // Logic to look up the error's key in your translation map.
-    // The `.getOrElse` provides a safe fallback.
+    // Use the error's `code` to find the right translation key.
+    val translationKey = error.code.getOrElse("error.unknown")
     translations.getOrElse(
-      error.key.getOrElse("error.unknown"),
-      error.message // Fall back to the original message if the key is not found
+      translationKey,
+      error.message // Fall back to the original message if no translation is found
     )
   }
 }
@@ -52,7 +52,7 @@ given myTranslator: Translator with {
 Chain the `.translateErrors()` method to your validation call. It will use the in-scope `given Translator` to transform the error messages.
 
 ```scala
-val result = User.validate(someData) // An Invalid ValidationResult
+val result = Validator[User].validate(someData) // An Invalid ValidationResult
 val translatedResult = result.translateErrors()
 
 // translatedResult now contains errors with localized messages
@@ -87,7 +87,7 @@ given myTranslator: Translator with {
 }
 
 // Both extensions work together through the same pattern
-val result = User.validate(invalidUser)
+val result = Validator[User].validate(invalidUser)
   // First, observe the raw result using the core ValidationObserver pattern
   .observe()  
   // Then, translate the errors for presentation (also built on the same pattern)

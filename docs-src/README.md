@@ -279,9 +279,9 @@ given loggingObserver: ValidationObserver with {
 }
 
 // Use the observer in your validation flow
-val result = User.validate(user)
+val result = Validator[User].validate(user)
   .observe() // The observer's onResult is called here
-  .map(_.toUpperCase)
+  .map(validatedUser => validatedUser.copy(name = validatedUser.name.trim))
 ```
 
 ### Building Custom Extensions
@@ -297,7 +297,7 @@ trait MyCustomExtension extends ValidationObserver {
 }
 
 // Usage remains clean and composable
-val result = User.validate(user)
+val result = Validator[User].validate(user)
   .observe() // Uses your custom extension
   .map(processUser)
 ```
@@ -328,17 +328,17 @@ val translations: Map[String, String] = Map(
 // --- Implementation of the Translator trait ---
 given myTranslator: Translator with {
   def translate(error: ValidationError): String = {
-    // Logic to look up the error's key in your translation map.
-    // The `.getOrElse` provides a safe fallback.
+    // Use the error's `code` to find the right translation key.
+    val translationKey = error.code.getOrElse("error.unknown")
     translations.getOrElse(
-      error.key.getOrElse("error.unknown"),
-      error.message // Fall back to the original message if the key is not found
+      translationKey,
+      error.message // Fall back to the original message if no translation is found
     )
   }
 }
 
 // Use the translator in your validation flow
-val result = User.validate(user)
+val result = Validator[User].validate(user)
   .observe() // Optional: observe the raw result first
   .translateErrors() // Translate errors for user presentation
 ```
