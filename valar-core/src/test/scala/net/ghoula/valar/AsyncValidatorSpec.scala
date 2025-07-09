@@ -1,11 +1,12 @@
 package net.ghoula.valar
 
 import munit.FunSuite
-import net.ghoula.valar.ValidationErrors.ValidationError
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, Future}
+
+import net.ghoula.valar.ValidationErrors.ValidationError
 
 /** Provides a comprehensive test suite for the [[AsyncValidator]] typeclass and its derivation.
   *
@@ -18,8 +19,6 @@ import scala.concurrent.{Await, Future}
   *   - Robustness against null values, optional fields, collections, and exceptions within Futures.
   */
 class AsyncValidatorSpec extends FunSuite {
-
-  // --- Test Models ---
 
   /** A simple case class for basic validation tests. */
   private case class User(name: String, age: Int)
@@ -39,8 +38,6 @@ class AsyncValidatorSpec extends FunSuite {
   /** A case class for testing optional field validation. */
   private case class UserProfile(username: String, email: Option[String])
 
-  // --- Custom Validators ---
-
   /** A standard synchronous validator for non-empty strings. */
   private given syncStringValidator: Validator[String] with {
     def validate(value: String): ValidationResult[String] =
@@ -55,7 +52,12 @@ class AsyncValidatorSpec extends FunSuite {
       else ValidationResult.invalid(ValidationError("Sync: Age must be non-negative"))
   }
 
-  /** A native asynchronous validator that simulates a DB check for usernames. */
+  /** A native asynchronous validator that simulates a database check for usernames.
+    *
+    * This validator checks if a username is reserved (e.g., "admin", "root") by simulating an
+    * asynchronous database lookup. If the username is not reserved, it delegates to the synchronous
+    * string validator for basic validation.
+    */
   private given asyncUsernameValidator: AsyncValidator[String] with {
     def validateAsync(name: String)(using ec: concurrent.ExecutionContext): Future[ValidationResult[String]] =
       Future {
@@ -67,7 +69,12 @@ class AsyncValidatorSpec extends FunSuite {
       }
   }
 
-  /** A native asynchronous validator that simulates a profanity filter. */
+  /** A native asynchronous validator that simulates a profanity filter.
+    *
+    * This validator checks if a text contains profanity by simulating an asynchronous profanity
+    * checking service. If no profanity is detected, it delegates to the synchronous string
+    * validator for basic validation.
+    */
   private given asyncCommentTextValidator: AsyncValidator[String] with {
     def validateAsync(text: String)(using ec: concurrent.ExecutionContext): Future[ValidationResult[String]] =
       Future {
@@ -79,7 +86,12 @@ class AsyncValidatorSpec extends FunSuite {
       }
   }
 
-  /** A native asynchronous validator for email formats. */
+  /** A native asynchronous validator for email formats.
+    *
+    * This validator performs basic email format validation by checking for the presence of an '@'
+    * symbol. In a real application, this would typically involve more sophisticated email
+    * validation logic or external service calls.
+    */
   private given asyncEmailValidator: AsyncValidator[String] with {
     def validateAsync(email: String)(using ec: concurrent.ExecutionContext): Future[ValidationResult[String]] =
       Future {
@@ -88,34 +100,60 @@ class AsyncValidatorSpec extends FunSuite {
       }
   }
 
-  // --- Derived Validator Instances ---
-
-  /** User validator using custom validators for both name and age. */
+  /** User validator using custom validators for both name and age fields.
+    *
+    * This validator demonstrates how to set up specific validators for different field types within
+    * a case class. The username field uses the asynchronous username validator, while the age field
+    * uses a synchronous validator lifted to async.
+    */
   private given userAsyncValidator: AsyncValidator[User] = {
     given AsyncValidator[String] = asyncUsernameValidator
     given AsyncValidator[Int] = AsyncValidator.fromSync(syncIntValidator)
     AsyncValidator.derive
   }
 
-  // Company and Team both use the same validator setup as User (String for names, Int for ages)
+  /** Company validator that reuses the user validation logic.
+    *
+    * This validator demonstrates automatic derivation where the existing user validator is used for
+    * the nested User field, and the string validator is used for the company name.
+    */
   private given companyAsyncValidator: AsyncValidator[Company] = AsyncValidator.derive
+
+  /** Team validator that reuses the user validation logic.
+    *
+    * This validator demonstrates automatic derivation where the existing user validator is used for
+    * the nested User field, and the string validator is used for the team name.
+    */
   private given teamAsyncValidator: AsyncValidator[Team] = AsyncValidator.derive
 
-  /** A derived validator for Comment that uses the async profanity filter for the `text` field. */
+  /** A derived validator for Comment that uses the async profanity filter for the text field.
+    *
+    * This validator demonstrates how to use a specific validator for text content that requires
+    * asynchronous profanity checking while using the standard validator for the author field.
+    */
   private given commentAsyncValidator: AsyncValidator[Comment] = {
     given AsyncValidator[String] = asyncCommentTextValidator
     AsyncValidator.derive
   }
 
-  /** A derived validator for Post that will use the async `Comment` validator. */
+  /** A derived validator for Post that uses the async Comment validator for the comments-field.
+    *
+    * This validator demonstrates validation of collections where each item in the collection
+    * requires asynchronous validation. The title field uses a synchronous validator, while the
+    * comments-field uses the async comment validator.
+    */
   private given postAsyncValidator: AsyncValidator[Post] = {
     given AsyncValidator[String] = AsyncValidator.fromSync(syncStringValidator)
     AsyncValidator.derive
   }
 
-  /** A derived validator for UserProfile that needs different validators for username and email
-    * fields. We need to create a custom validator since the macro can't distinguish between
-    * different String fields.
+  /** A custom validator for UserProfile that handles different validation logic for username and
+    * email fields.
+    *
+    * This validator demonstrates how to create custom validation logic when the automatic
+    * derivation cannot distinguish between different String fields that require different
+    * validation rules. The username field uses the username validator, while the optional email
+    * field uses the email validator.
     */
   private given userProfileAsyncValidator: AsyncValidator[UserProfile] = new AsyncValidator[UserProfile] {
     def validateAsync(
@@ -137,8 +175,6 @@ class AsyncValidatorSpec extends FunSuite {
       }
     }
   }
-
-  // --- Test Cases ---
 
   test("validateAsync should succeed for a valid object") {
     val validUser = User("John", 30)
@@ -235,7 +271,7 @@ class AsyncValidatorSpec extends FunSuite {
     futureResult.map {
       case ValidationResult.Invalid(errors) =>
         assertEquals(errors.size, 2)
-        assert(errors.exists(e => e.message.contains("profanity") && e.fieldPath.contains("comments")))
+        assert(errors.exists(e => e.message.contains("profanity") && e.fieldPath == List("comments", "text")))
         assert(errors.exists(e => e.message.contains("empty") && e.fieldPath.contains("comments")))
       case _ => fail("Expected Invalid result for collection validation")
     }
