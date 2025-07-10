@@ -48,7 +48,7 @@ lazy val root = (project in file("."))
     valarMunitNative,
     valarTranslatorJVM,
     valarTranslatorNative,
-    valarBenchmarks
+    valarBenchmarks // Only one benchmarks module
   )
   .settings(
     name := "valar-root",
@@ -147,7 +147,7 @@ lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
 // ===== Benchmarks Module =====
 lazy val valarBenchmarks = project
   .in(file("valar-benchmarks"))
-  .dependsOn(valarCoreJVM)
+  .dependsOn(valarCoreJVM, valarTranslatorJVM, valarCoreNative, valarTranslatorNative)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "valar-benchmarks",
@@ -155,7 +155,11 @@ lazy val valarBenchmarks = project
     libraryDependencies ++= Seq(
       "org.openjdk.jmh" % "jmh-core" % "1.37",
       "org.openjdk.jmh" % "jmh-generator-annprocess" % "1.37"
-    )
+    ),
+    // Add native compilation settings for the native benchmark runner
+    nativeConfig ~= { c =>
+      c.withLTO(LTO.thin).withMode(Mode.releaseFast).withGC(GC.immix)
+    }
   )
 
 // ===== Convenience Aliases =====

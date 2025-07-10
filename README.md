@@ -92,9 +92,10 @@ Valar provides artifacts for both JVM and Scala Native platforms:
 
 ## **Additional Resources**
 
-- 📊 **[Performance Benchmarks](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md)**: Detailed JMH benchmark results and analysis
+- 📊 **[Benchmarking Suite](https://github.com/hakimjonas/valar/blob/main/docs-src/BENCHMARKS.md)**: Comprehensive benchmarking strategy across JVM and Native platforms
 - 🧪 **[Testing Guide](https://github.com/hakimjonas/valar/blob/main/valar-munit/README.md)**: Enhanced testing utilities with ValarSuite
 - 🌐 **[Internationalization](https://github.com/hakimjonas/valar/blob/main/valar-translator/README.md)**: i18n support for validation error messages
+- 📈 **[Performance Regression Detection](https://github.com/hakimjonas/valar/blob/main/.github/workflows/benchmark.yml)**: Automated CI benchmarking to prevent performance regressions
 ## **Installation**
 
 Add the following to your build.sbt:

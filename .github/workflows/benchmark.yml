@@ -1,0 +1,226 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  jvm-benchmarks:
+    name: JVM Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Run JVM benchmarks
+        run: sbt "valarBenchmarks / Jmh / run -rf json -rff jvm-benchmark-results.json"
+
+      - name: Upload JVM benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: jvm-benchmark-results
+          path: jvm-benchmark-results.json
+          retention-days: 90
+
+      - name: Download previous JVM benchmark results
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: benchmark.yml
+          workflow_conclusion: success
+          name: jvm-benchmark-results
+          path: previous-results
+          if_no_artifact_found: ignore
+
+      - name: Check for performance regression
+        if: success() && hashFiles('previous-results/jvm-benchmark-results.json') != ''
+        run: |
+          echo "Comparing current benchmark results with previous run"
+
+          # Simple regression detection script
+          cat > compare.py << 'EOF'
+          import json
+          import sys
+
+          # Threshold for regression detection (10% slowdown)
+          REGRESSION_THRESHOLD = 1.10
+
+          # Load benchmark results
+          with open('jvm-benchmark-results.json', 'r') as f:
+              current = json.load(f)
+
+          with open('previous-results/jvm-benchmark-results.json', 'r') as f:
+              previous = json.load(f)
+
+          # Group by benchmark name
+          current_by_name = {b['benchmark']: b for b in current}
+          previous_by_name = {b['benchmark']: b for b in previous}
+
+          # Check for regressions
+          regressions = []
+          for name, current_data in current_by_name.items():
+              if name in previous_by_name:
+                  prev_data = previous_by_name[name]
+
+                  # Compare primary metric (usually average time)
+                  current_score = current_data['primaryMetric']['score']
+                  previous_score = prev_data['primaryMetric']['score']
+
+                  # Higher score means worse performance for time-based metrics
+                  if current_score > previous_score * REGRESSION_THRESHOLD:
+                      regression_pct = ((current_score - previous_score) / previous_score) * 100
+                      regressions.append((name, previous_score, current_score, regression_pct))
+
+          # Report results
+          if regressions:
+              print("⚠️ Performance regressions detected:")
+              print("\nBenchmark | Previous | Current | Change")
+              print("----------|----------|---------|-------")
+              for name, prev, curr, pct in regressions:
+                  print(f"{name} | {prev:.2f} ns | {curr:.2f} ns | +{pct:.2f}%")
+              sys.exit(1)
+          else:
+              print("✅ No performance regressions detected")
+              sys.exit(0)
+          EOF
+
+          python3 compare.py
+
+  native-benchmarks:
+    name: Native Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Install Scala Native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libgc-dev libunwind-dev
+
+      - name: Run Native benchmarks
+        run: sbt "valarBenchmarks / run native"
+
+      - name: Upload Native benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: native-benchmark-results
+          path: native-benchmark-results.csv
+          retention-days: 90
+
+      - name: Download previous Native benchmark results
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: benchmark.yml
+          workflow_conclusion: success
+          name: native-benchmark-results
+          path: previous-results
+          if_no_artifact_found: ignore
+
+      - name: Check for performance regression
+        if: success() && hashFiles('previous-results/native-benchmark-results.csv') != ''
+        run: |
+          echo "Comparing current native benchmark results with previous run"
+
+          # Simple regression detection script for CSV format
+          cat > compare_native.py << 'EOF'
+          import csv
+          import sys
+
+          # Threshold for regression detection (10% slowdown)
+          REGRESSION_THRESHOLD = 1.10
+
+          # Load benchmark results
+          current_data = {}
+          with open('native-benchmark-results.csv', 'r') as f:
+              reader = csv.DictReader(f)
+              for row in reader:
+                  current_data[row['Benchmark']] = float(row['Time (ns)'])
+
+          previous_data = {}
+          with open('previous-results/native-benchmark-results.csv', 'r') as f:
+              reader = csv.DictReader(f)
+              for row in reader:
+                  previous_data[row['Benchmark']] = float(row['Time (ns)'])
+
+          # Check for regressions
+          regressions = []
+          for name, current_score in current_data.items():
+              if name in previous_data:
+                  previous_score = previous_data[name]
+
+                  # Higher score means worse performance for time-based metrics
+                  if current_score > previous_score * REGRESSION_THRESHOLD:
+                      regression_pct = ((current_score - previous_score) / previous_score) * 100
+                      regressions.append((name, previous_score, current_score, regression_pct))
+
+          # Report results
+          if regressions:
+              print("⚠️ Performance regressions detected:")
+              print("\nBenchmark | Previous | Current | Change")
+              print("----------|----------|---------|-------")
+              for name, prev, curr, pct in regressions:
+                  print(f"{name} | {prev:.2f} ns | {curr:.2f} ns | +{pct:.2f}%")
+              sys.exit(1)
+          else:
+              print("✅ No performance regressions detected")
+              sys.exit(0)
+          EOF
+
+          python3 compare_native.py
+
+  platform-comparison:
+    name: Platform Comparison Report
+    needs: [jvm-benchmarks, native-benchmarks]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download JVM benchmark results
+        uses: actions/download-artifact@v3
+        with:
+          name: jvm-benchmark-results
+          path: results
+
+      - name: Download Native benchmark results
+        uses: actions/download-artifact@v3
+        with:
+          name: native-benchmark-results
+          path: results
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: Copy benchmark results to working directory
+        run: |
+          cp results/jvm-benchmark-results.json jvm-benchmark-results.json
+          cp results/native-benchmark-results.csv native-benchmark-results.csv
+
+      - name: Generate platform comparison report
+        run: sbt "valarBenchmarks / runMain net.ghoula.valar.benchmarks.ComparisonReport"
+
+      - name: Upload platform comparison report
+        uses: actions/upload-artifact@v3
+        with:
+          name: platform-comparison-report
+          path: benchmark-comparison.md
+          retention-days: 90
