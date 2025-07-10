@@ -33,25 +33,40 @@ object ComparisonReport {
   private def loadJvmResults(): Try[Map[String, Double]] = {
     import scala.io.Source
 
-    val jsonFile = new File("jvm-benchmark-results.json")
-    if (!jsonFile.exists()) {
-      scala.util.Failure(new IllegalStateException("JVM benchmark results file not found. Run JMH benchmarks first."))
-    } else {
-      Try {
-        val jsonString = Source.fromFile(jsonFile).mkString
-        val results = MutableMap[String, Double]()
+    // Check multiple possible locations for the results file
+    val possiblePaths = Seq(
+      "jvm-benchmark-results.json",
+      "valar-benchmarks/jvm-benchmark-results.json",
+      "./jvm-benchmark-results.json",
+      new File(System.getProperty("user.dir")).getParent + "/jvm-benchmark-results.json"
+    )
 
-        // Simple regex-based JSON parsing
-        val pattern = """"benchmark"\s*:\s*"([^"]+)"[^}]+"primaryMetric"\s*:\s*\{[^}]+"score"\s*:\s*([0-9.]+)""".r
+    val jsonFile = possiblePaths.map(new File(_)).find(_.exists())
 
-        for (m <- pattern.findAllMatchIn(jsonString)) {
-          val benchmarkName = m.group(1).split('.').last
-          val score = m.group(2).toDouble
-          results(benchmarkName) = score
+    jsonFile match {
+      case Some(file) =>
+        println(s"Found JVM results at: ${file.getAbsolutePath}")
+        Try {
+          val jsonString = Source.fromFile(file).mkString
+          val results = MutableMap[String, Double]()
+
+          // Simple regex-based JSON parsing
+          val pattern = """"benchmark"\s*:\s*"([^"]+)"[^}]+"primaryMetric"\s*:\s*\{[^}]+"score"\s*:\s*([0-9.]+)""".r
+
+          for (m <- pattern.findAllMatchIn(jsonString)) {
+            val benchmarkName = m.group(1).split('.').last
+            val score = m.group(2).toDouble
+            results(benchmarkName) = score
+          }
+
+          results.toMap
         }
-
-        results.toMap
-      }
+      case None =>
+        scala.util.Failure(
+          new IllegalStateException(
+            s"JVM benchmark results file not found. Searched: ${possiblePaths.mkString(", ")}"
+          )
+        )
     }
   }
 

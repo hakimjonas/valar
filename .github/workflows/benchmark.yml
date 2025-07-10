@@ -216,11 +216,20 @@ jobs:
           cp results/native-benchmark-results.csv native-benchmark-results.csv
 
       - name: Generate platform comparison report
-        run: sbt "valarBenchmarks / runMain net.ghoula.valar.benchmarks.ComparisonReport"
+        run: sbt "valarBenchmarks / run report"
 
-      - name: Upload platform comparison report
+      - name: Generate visualization dashboard
+        run: sbt "valarBenchmarks / run dashboard"
+
+      - name: Analyze performance trends
+        run: sbt "valarBenchmarks / run trends"
+
+      - name: Upload benchmark reports
         uses: actions/upload-artifact@v3
         with:
-          name: platform-comparison-report
-          path: benchmark-comparison.md
+          name: benchmark-reports
+          path: |
+            benchmark-comparison.md
+            benchmark-dashboard.html
+            benchmark-trends.html
           retention-days: 90

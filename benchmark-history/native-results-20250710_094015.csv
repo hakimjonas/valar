@@ -1,0 +1,16 @@
+Benchmark,Time (ns),Platform
+syncSimpleValid,9877.158,Native
+syncSimpleInvalid,7839.325,Native
+syncNestedValid,12510.448,Native
+syncNestedInvalid,15844.767,Native
+macroDerivationOverhead,10981.036,Native
+macroDerivationOverheadInvalid,8662.287,Native
+errorAccumulationScaling,89865.935,Native
+errorAccumulationScalingValid,11353.067,Native
+observerPattern,871.084,Native
+observerPatternInvalid,885.181,Native
+noObserverBaseline,519.151,Native
+translatorIntegration,1680.64,Native
+translatorIntegrationValid,272.49,Native
+deepNestingPerformance,12324.613,Native
+deepNestingPerformanceWithErrors,11732.321,Native

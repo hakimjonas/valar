@@ -147,19 +147,24 @@ lazy val valarTranslator = crossProject(JVMPlatform, NativePlatform)
 // ===== Benchmarks Module =====
 lazy val valarBenchmarks = project
   .in(file("valar-benchmarks"))
-  .dependsOn(valarCoreJVM, valarTranslatorJVM, valarCoreNative, valarTranslatorNative)
+  .dependsOn(valarCoreJVM, valarTranslatorJVM)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "valar-benchmarks",
     publish / skip := true,
     libraryDependencies ++= Seq(
       "org.openjdk.jmh" % "jmh-core" % "1.37",
-      "org.openjdk.jmh" % "jmh-generator-annprocess" % "1.37"
+      "org.openjdk.jmh" % "jmh-generator-annprocess" % "1.37",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
     ),
-    // Add native compilation settings for the native benchmark runner
-    nativeConfig ~= { c =>
-      c.withLTO(LTO.thin).withMode(Mode.releaseFast).withGC(GC.immix)
-    }
+    // Create a main class alias for easier running
+    Compile / mainClass := Some("net.ghoula.valar.benchmarks.BenchmarkMain"),
+    // Fork the JVM to avoid classloader issues with JMH
+    fork := true,
+    javaOptions ++= Seq(
+      "-Xms1G",
+      "-Xmx4G"
+    )
   )
 
 // ===== Convenience Aliases =====

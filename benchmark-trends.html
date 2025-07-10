@@ -1,0 +1,1462 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Valar Benchmark Trends</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+    .chart-container {
+      position: relative;
+      margin: 20px auto;
+      height: 400px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .summary {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+    .trend-info {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 4px solid #ccc;
+    }
+    .trend-improving {
+      border-left-color: green;
+    }
+    .trend-worsening {
+      border-left-color: red;
+    }
+    .trend-stable {
+      border-left-color: blue;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Valar Benchmark Trends</h1>
+    <p class="summary">Generated on 2025-07-10 15:29:00</p>
+    
+    <div class="card">
+      <h2>Performance Trends Summary</h2>
+      <div class="summary">
+        <p>Analyzing performance trends across 68 data points for 23 benchmarks.</p>
+      </div>
+      
+      <div class="trend-analysis">
+        <div class="trend-info trend-improving"><h3>Improving Benchmarks (13)</h3><ul><li><strong>syncSimpleValid</strong>: Native improving by 15,75% per run.</li><li><strong>deepNestingPerformance</strong>: Native improving by 7,03% per run.</li><li><strong>translatorIntegrationValid</strong>: Native improving by 12,99% per run.</li><li><strong>syncSimpleInvalid</strong>: Native improving by 18,03% per run.</li><li><strong>translatorIntegration</strong>: Native improving by 20,62% per run.</li><li><strong>observerPattern</strong>: Native improving by 46,54% per run.</li><li><strong>errorAccumulationScalingValid</strong>: Native improving by 20,52% per run.</li><li><strong>noObserverBaseline</strong>: Native improving by 10,04% per run.</li><li><strong>observerPatternInvalid</strong>: Native improving by 26,89% per run.</li><li><strong>syncNestedInvalid</strong>: Native improving by 19,36% per run.</li><li><strong>macroDerivationOverhead</strong>: Native improving by 4,44% per run.</li><li><strong>syncNestedValid</strong>: Native improving by 8,85% per run.</li><li><strong>errorAccumulationScaling</strong>: Native improving by 20,29% per run.</li></ul></div><div class="trend-info trend-worsening"><h3>Worsening Benchmarks (2)</h3><ul><li><strong>deepNestingPerformanceWithErrors</strong>: Native worsening by 14,52% per run.</li><li><strong>macroDerivationOverheadInvalid</strong>: Native worsening by 7,26% per run.</li></ul></div><div class="trend-info trend-stable"><h3>Stable Benchmarks (8)</h3><p>These benchmarks show no significant trend over time.</p></div>
+      </div>
+    </div>
+    
+    
+<div class="card">
+  <h2>asyncNestedInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_asyncNestedInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for asyncNestedInvalid
+    const ctx_chart_asyncNestedInvalid = document.getElementById('chart_asyncNestedInvalid').getContext('2d');
+    new Chart(ctx_chart_asyncNestedInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 20584.241311582427}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>asyncNestedValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_asyncNestedValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for asyncNestedValid
+    const ctx_chart_asyncNestedValid = document.getElementById('chart_asyncNestedValid').getContext('2d');
+    new Chart(ctx_chart_asyncNestedValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 18132.532822562665}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>asyncSimpleInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_asyncSimpleInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for asyncSimpleInvalid
+    const ctx_chart_asyncSimpleInvalid = document.getElementById('chart_asyncSimpleInvalid').getContext('2d');
+    new Chart(ctx_chart_asyncSimpleInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 15821.972082884298}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>asyncSimpleValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_asyncSimpleValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for asyncSimpleValid
+    const ctx_chart_asyncSimpleValid = document.getElementById('chart_asyncSimpleValid').getContext('2d');
+    new Chart(ctx_chart_asyncSimpleValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 15226.02948458838}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>concurrentValidation</h2>
+  <div class="chart-container">
+    <canvas id="chart_concurrentValidation"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for concurrentValidation
+    const ctx_chart_concurrentValidation = document.getElementById('chart_concurrentValidation').getContext('2d');
+    new Chart(ctx_chart_concurrentValidation, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 40152.861028157036}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>concurrentValidationWithErrors</h2>
+  <div class="chart-container">
+    <canvas id="chart_concurrentValidationWithErrors"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for concurrentValidationWithErrors
+    const ctx_chart_concurrentValidationWithErrors = document.getElementById('chart_concurrentValidationWithErrors').getContext('2d');
+    new Chart(ctx_chart_concurrentValidationWithErrors, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 38096.544348175594}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>deepNestingPerformance</h2>
+  <div class="chart-container">
+    <canvas id="chart_deepNestingPerformance"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for deepNestingPerformance
+    const ctx_chart_deepNestingPerformance = document.getElementById('chart_deepNestingPerformance').getContext('2d');
+    new Chart(ctx_chart_deepNestingPerformance, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 1102.660472330163}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 14521.916}, {x: '2025-07-10 09:40', y: 12324.613}, {x: '2025-07-10 15:29', y: 12670.678}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>deepNestingPerformanceWithErrors</h2>
+  <div class="chart-container">
+    <canvas id="chart_deepNestingPerformanceWithErrors"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for deepNestingPerformanceWithErrors
+    const ctx_chart_deepNestingPerformanceWithErrors = document.getElementById('chart_deepNestingPerformanceWithErrors').getContext('2d');
+    new Chart(ctx_chart_deepNestingPerformanceWithErrors, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 3441.4612523587944}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 10035.335}, {x: '2025-07-10 09:40', y: 11732.321}, {x: '2025-07-10 15:29', y: 13443.361}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>errorAccumulationScaling</h2>
+  <div class="chart-container">
+    <canvas id="chart_errorAccumulationScaling"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for errorAccumulationScaling
+    const ctx_chart_errorAccumulationScaling = document.getElementById('chart_errorAccumulationScaling').getContext('2d');
+    new Chart(ctx_chart_errorAccumulationScaling, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 41496.63716359786}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 85138.552}, {x: '2025-07-10 09:40', y: 89865.935}, {x: '2025-07-10 15:29', y: 54143.731}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>errorAccumulationScalingValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_errorAccumulationScalingValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for errorAccumulationScalingValid
+    const ctx_chart_errorAccumulationScalingValid = document.getElementById('chart_errorAccumulationScalingValid').getContext('2d');
+    new Chart(ctx_chart_errorAccumulationScalingValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 1290.6810707378245}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 10338.373}, {x: '2025-07-10 09:40', y: 11353.067}, {x: '2025-07-10 15:29', y: 6484.051}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>macroDerivationOverhead</h2>
+  <div class="chart-container">
+    <canvas id="chart_macroDerivationOverhead"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for macroDerivationOverhead
+    const ctx_chart_macroDerivationOverhead = document.getElementById('chart_macroDerivationOverhead').getContext('2d');
+    new Chart(ctx_chart_macroDerivationOverhead, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 455.90938784115895}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 4380.42}, {x: '2025-07-10 09:40', y: 10981.036}, {x: '2025-07-10 15:29', y: 3813.119}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>macroDerivationOverheadInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_macroDerivationOverheadInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for macroDerivationOverheadInvalid
+    const ctx_chart_macroDerivationOverheadInvalid = document.getElementById('chart_macroDerivationOverheadInvalid').getContext('2d');
+    new Chart(ctx_chart_macroDerivationOverheadInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 1186.5815167418798}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 6286.281}, {x: '2025-07-10 09:40', y: 8662.287}, {x: '2025-07-10 15:29', y: 7367.058}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>memoryAllocationProfile</h2>
+  <div class="chart-container">
+    <canvas id="chart_memoryAllocationProfile"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for memoryAllocationProfile
+    const ctx_chart_memoryAllocationProfile = document.getElementById('chart_memoryAllocationProfile').getContext('2d');
+    new Chart(ctx_chart_memoryAllocationProfile, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 153.30906813339664}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>memoryAllocationProfileInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_memoryAllocationProfileInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for memoryAllocationProfileInvalid
+    const ctx_chart_memoryAllocationProfileInvalid = document.getElementById('chart_memoryAllocationProfileInvalid').getContext('2d');
+    new Chart(ctx_chart_memoryAllocationProfileInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 223.05565601308535}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>noObserverBaseline</h2>
+  <div class="chart-container">
+    <canvas id="chart_noObserverBaseline"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for noObserverBaseline
+    const ctx_chart_noObserverBaseline = document.getElementById('chart_noObserverBaseline').getContext('2d');
+    new Chart(ctx_chart_noObserverBaseline, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 49.61770038639272}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 299.622}, {x: '2025-07-10 09:40', y: 519.151}, {x: '2025-07-10 15:29', y: 229.453}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>observerPattern</h2>
+  <div class="chart-container">
+    <canvas id="chart_observerPattern"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for observerPattern
+    const ctx_chart_observerPattern = document.getElementById('chart_observerPattern').getContext('2d');
+    new Chart(ctx_chart_observerPattern, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 58.31869516901919}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 1706.57}, {x: '2025-07-10 09:40', y: 871.084}, {x: '2025-07-10 15:29', y: 692.158}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>observerPatternInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_observerPatternInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for observerPatternInvalid
+    const ctx_chart_observerPatternInvalid = document.getElementById('chart_observerPatternInvalid').getContext('2d');
+    new Chart(ctx_chart_observerPatternInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 190.19763431458296}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 932.642}, {x: '2025-07-10 09:40', y: 885.181}, {x: '2025-07-10 15:29', y: 514.534}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>syncNestedInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_syncNestedInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for syncNestedInvalid
+    const ctx_chart_syncNestedInvalid = document.getElementById('chart_syncNestedInvalid').getContext('2d');
+    new Chart(ctx_chart_syncNestedInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 367.6179481348936}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 10836.966}, {x: '2025-07-10 09:40', y: 15844.767}, {x: '2025-07-10 15:29', y: 6549.007}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>syncNestedValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_syncNestedValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for syncNestedValid
+    const ctx_chart_syncNestedValid = document.getElementById('chart_syncNestedValid').getContext('2d');
+    new Chart(ctx_chart_syncNestedValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 123.51128175115994}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 10799.114}, {x: '2025-07-10 09:40', y: 12510.448}, {x: '2025-07-10 15:29', y: 8899.189}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>syncSimpleInvalid</h2>
+  <div class="chart-container">
+    <canvas id="chart_syncSimpleInvalid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for syncSimpleInvalid
+    const ctx_chart_syncSimpleInvalid = document.getElementById('chart_syncSimpleInvalid').getContext('2d');
+    new Chart(ctx_chart_syncSimpleInvalid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 183.3869035145294}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 4563.078}, {x: '2025-07-10 09:40', y: 7839.325}, {x: '2025-07-10 15:29', y: 2742.791}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>syncSimpleValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_syncSimpleValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for syncSimpleValid
+    const ctx_chart_syncSimpleValid = document.getElementById('chart_syncSimpleValid').getContext('2d');
+    new Chart(ctx_chart_syncSimpleValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 50.08418977324627}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 6342.108}, {x: '2025-07-10 09:40', y: 9877.158}, {x: '2025-07-10 15:29', y: 4197.823}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>translatorIntegration</h2>
+  <div class="chart-container">
+    <canvas id="chart_translatorIntegration"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for translatorIntegration
+    const ctx_chart_translatorIntegration = document.getElementById('chart_translatorIntegration').getContext('2d');
+    new Chart(ctx_chart_translatorIntegration, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 283.45267488804393}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 1918.837}, {x: '2025-07-10 09:40', y: 1680.64}, {x: '2025-07-10 15:29', y: 1251.93}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+
+<div class="card">
+  <h2>translatorIntegrationValid</h2>
+  <div class="chart-container">
+    <canvas id="chart_translatorIntegrationValid"></canvas>
+  </div>
+  
+  <script>
+    // Trend Chart for translatorIntegrationValid
+    const ctx_chart_translatorIntegrationValid = document.getElementById('chart_translatorIntegrationValid').getContext('2d');
+    new Chart(ctx_chart_translatorIntegrationValid, {
+      type: 'line',
+      data: {
+        datasets: [
+          {
+            label: 'JVM',
+            data: [{x: '2025-07-10 15:29', y: 51.026121466935294}],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Native',
+            data: [{x: '2025-07-10 09:20', y: 317.967}, {x: '2025-07-10 09:40', y: 272.49}, {x: '2025-07-10 15:29', y: 245.575}],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'MMM dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          },
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: 'Time (ns)'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</div>
+    
+    
+  </div>
+</body>
+</html>
+      

@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Valar Benchmark Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-gauge@0.3.0/dist/chartjs-gauge.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .chart-container {
+      position: relative;
+      margin: 20px auto;
+      height: 400px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 0 -10px;
+    }
+    .column {
+      flex: 1;
+      padding: 0 10px;
+      min-width: 300px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .summary {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Valar Benchmark Dashboard</h1>
+    <p class="summary">Generated on 2025-07-10 15:29:00</p>
+    
+    <div class="row">
+      <div class="column">
+        <div class="card">
+          <h2>Platform Comparison</h2>
+          <div class="chart-container">
+            <canvas id="platformComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <div class="column">
+        <div class="card">
+          <h2>Performance Improvement</h2>
+          <div class="chart-container" style="height: 300px;">
+            <canvas id="gaugeChart"></canvas>
+          </div>
+          <div class="summary">
+            <p>Average Native vs JVM: -1589,09%</p>
+            <p>JVM is faster</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <h2>Benchmark Details</h2>
+      <div class="chart-container">
+        <canvas id="detailsChart"></canvas>
+      </div>
+    </div>
+    
+    <script>
+      // Platform Comparison Chart
+      const platformCtx = document.getElementById('platformComparisonChart').getContext('2d');
+      new Chart(platformCtx, {
+        type: 'bar',
+        data: {
+          labels: ['JVM', 'Native'],
+          datasets: [{
+            label: 'Average Execution Time (ns)',
+            data: [
+              8640.073470221885,
+              8216.297199999999
+            ],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.7)',
+              'rgba(255, 99, 132, 0.7)'
+            ],
+            borderColor: [
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Average Time (ns)'
+              }
+            }
+          }
+        }
+      });
+      
+      // Gauge Chart for Performance Improvement
+      const gaugeCtx = document.getElementById('gaugeChart').getContext('2d');
+      new Chart(gaugeCtx, {
+        type: 'gauge',
+        data: {
+          datasets: [{
+            value: -1589.0924736265438,
+            minValue: -50,
+            maxValue: 50,
+            backgroundColor: ['red', 'orange', 'yellow', 'green'],
+            data: [-50, -25, 0, 25, 50]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          title: {
+            display: true,
+            text: 'Native Performance vs JVM (%)'
+          }
+        }
+      });
+      
+      // Detailed Benchmark Comparison
+      const detailsCtx = document.getElementById('detailsChart').getContext('2d');
+      new Chart(detailsCtx, {
+        type: 'bar',
+        data: {
+          labels: ['deepNestingPerformance', 'deepNestingPerformanceWithErrors', 'errorAccumulationScaling', 'errorAccumulationScalingValid', 'macroDerivationOverhead', 'macroDerivationOverheadInvalid', 'noObserverBaseline', 'observerPattern', 'observerPatternInvalid', 'syncNestedInvalid', 'syncNestedValid', 'syncSimpleInvalid', 'syncSimpleValid', 'translatorIntegration', 'translatorIntegrationValid'],
+          datasets: [
+            {
+              label: 'JVM',
+              data: [1102.660472330163, 3441.4612523587944, 41496.63716359786, 1290.6810707378245, 455.90938784115895, 1186.5815167418798, 49.61770038639272, 58.31869516901919, 190.19763431458296, 367.6179481348936, 123.51128175115994, 183.3869035145294, 50.08418977324627, 283.45267488804393, 51.026121466935294],
+              backgroundColor: 'rgba(54, 162, 235, 0.7)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            },
+            {
+              label: 'Native',
+              data: [12670.678, 13443.361, 54143.731, 6484.051, 3813.119, 7367.058, 229.453, 692.158, 514.534, 6549.007, 8899.189, 2742.791, 4197.823, 1251.93, 245.575],
+              backgroundColor: 'rgba(255, 99, 132, 0.7)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Time (ns)'
+              }
+            }
+          }
+        }
+      });
+    </script>
+  </div>
+</body>
+</html>
+      

@@ -16,7 +16,7 @@ import net.ghoula.valar.translator.{translateErrors, Translator}
   *
   * To run these benchmarks, use the sbt command: `valarBenchmarks / run native`
   */
-object dNativeBenchmarks {
+object NativeBenchmarks {
 
   // --- Test Data and Models ---
 
