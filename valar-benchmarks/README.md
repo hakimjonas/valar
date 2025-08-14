@@ -26,34 +26,32 @@ Based on the latest run (JDK 21.0.8, OpenJDK 64-Bit Server VM):
 
 ## Performance Analysis
 
-### 🚀 Synchronous Performance is Excellent
+### Synchronous Validation Performance
 
-The validation for simple, valid objects completes in **~61 nanoseconds**. This is incredibly fast and proves that for the "happy path," the library adds negligible overhead. The slightly higher numbers for invalid and nested cases (~172–431 ns) are also excellent and are expected, as they account for:
+The validation for simple, valid objects completes in **~61 nanoseconds**. Invalid and nested cases show higher execution times (~172–431 ns), which can be attributed to:
 
 - Creation of `ValidationError` objects for invalid cases
 - Recursive validation calls for nested structures
 - Error accumulation logic
 
-**Key takeaway**: Synchronous validation is extremely fast with minimal overhead.
+### Asynchronous Validation Performance
 
-### ⚡ Asynchronous Performance is As Expected
-
-The async benchmarks show results in the **~18–27 microsecond range** (18,000–27,000 ns). This is excellent and exactly what we should expect. The "cost" here is not from our validation logic but from the inherent overhead of:
+The async benchmarks show results in the **~18–27 microsecond range** (18,000–27,000 ns). The overhead observed includes:
 
 - Creating `Future` instances
 - Managing the `ExecutionContext`
 - The `Await.result` call in the benchmark (blocking on async results)
 
-**Key takeaway**: Our async logic is efficient and correctly builds on Scala's non-blocking primitives without introducing performance bottlenecks.
-
 ### Summary
 
-- **Sync validation**: Negligible overhead, perfect for high-throughput scenarios
-- **Async validation**: Adds only the expected Future abstraction overhead
-- **Valid vs Invalid**: Invalid cases show expected slight overhead due to error object creation
-- **Simple vs Nested**: Nested validation scales linearly with complexity
+The benchmark results show the following patterns:
 
-The results confirm that Valar introduces no significant performance penalties beyond what's inherent to the chosen execution model (sync vs. async).
+- **Sync validation**: Execution times range from 61ns for simple valid cases to 431ns for nested invalid cases
+- **Async validation**: Execution times range from 17.7μs to 26.7μs across different scenarios
+- **Valid vs Invalid**: Invalid cases consistently show higher execution times due to error object creation
+- **Simple vs Nested**: Nested validation shows increased execution time proportional to structural complexity
+
+These measurements represent the current performance characteristics under the specified test conditions.
 
 ## Running Benchmarks
 
