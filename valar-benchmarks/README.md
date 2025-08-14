@@ -11,24 +11,24 @@ The benchmark suite covers:
 
 ## Benchmark Results
 
-Based on the latest run (JDK 21.0.7, OpenJDK 64-Bit Server VM):
+Based on the latest run (JDK 21.0.8, OpenJDK 64-Bit Server VM):
 
-| Benchmark            | Mode | Score      | Error       | Units |
-|----------------------|------|------------|-------------|-------|
-| `syncSimpleValid`    | avgt | 44.628     | ± 6.746     | ns/op |
-| `syncSimpleInvalid`  | avgt | 149.155    | ± 7.124     | ns/op |
-| `syncNestedValid`    | avgt | 108.968    | ± 7.300     | ns/op |
-| `syncNestedInvalid`  | avgt | 449.783    | ± 18.373    | ns/op |
-| `asyncSimpleValid`   | avgt | 13,212.036 | ± 1,114.597 | ns/op |
-| `asyncSimpleInvalid` | avgt | 13,465.022 | ± 214.379   | ns/op |
-| `asyncNestedValid`   | avgt | 14,513.056 | ± 1,023.942 | ns/op |
-| `asyncNestedInvalid` | avgt | 15,432.503 | ± 2,592.103 | ns/op |
+| Benchmark            | Mode | Score      | Error        | Units |
+|----------------------|------|------------|--------------|-------|
+| `syncSimpleValid`    | avgt | 60.858     | ± 0.743      | ns/op |
+| `syncSimpleInvalid`  | avgt | 171.782    | ± 1.806      | ns/op |
+| `syncNestedValid`    | avgt | 115.872    | ± 3.227      | ns/op |
+| `syncNestedInvalid`  | avgt | 431.439    | ± 10.251     | ns/op |
+| `asyncSimpleValid`   | avgt | 17,656.897 | ± 444.704    | ns/op |
+| `asyncSimpleInvalid` | avgt | 17,704.613 | ± 254.509    | ns/op |
+| `asyncNestedValid`   | avgt | 21,292.686 | ± 542.063    | ns/op |
+| `asyncNestedInvalid` | avgt | 26,748.345 | ± 10,286.717 | ns/op |
 
 ## Performance Analysis
 
 ### 🚀 Synchronous Performance is Excellent
 
-The validation for simple, valid objects completes in **~45 nanoseconds**. This is incredibly fast and proves that for the "happy path," the library adds negligible overhead. The slightly higher numbers for invalid and nested cases (~150–450 ns) are also excellent and are expected, as they account for:
+The validation for simple, valid objects completes in **~61 nanoseconds**. This is incredibly fast and proves that for the "happy path," the library adds negligible overhead. The slightly higher numbers for invalid and nested cases (~172–431 ns) are also excellent and are expected, as they account for:
 
 - Creation of `ValidationError` objects for invalid cases
 - Recursive validation calls for nested structures
@@ -38,7 +38,7 @@ The validation for simple, valid objects completes in **~45 nanoseconds**. This 
 
 ### ⚡ Asynchronous Performance is As Expected
 
-The async benchmarks show results in the **~13–16 microsecond range** (13,00016,000 ns). This is excellent and exactly what we should expect. The "cost" here is not from our validation logic but from the inherent overhead of:
+The async benchmarks show results in the **~18–27 microsecond range** (18,000–27,000 ns). This is excellent and exactly what we should expect. The "cost" here is not from our validation logic but from the inherent overhead of:
 
 - Creating `Future` instances
 - Managing the `ExecutionContext`
@@ -129,7 +129,7 @@ To add new benchmarks:
 
 ## Dependencies
 - JMH 1.37
-- Scala 3.7.1
+- Scala 3.7.2
 - OpenJDK 21+
 
 ## Notes
