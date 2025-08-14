@@ -9,7 +9,7 @@ import _root_.mdoc.MdocPlugin
 // ===== Build‑wide Settings =====
 ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / scalaVersion := "3.7.1"
+ThisBuild / scalaVersion := "3.7.2"
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
@@ -37,7 +37,7 @@ ThisBuild / scalacOptions ++= Seq(
   "-Wunused:imports",
   "-no-indent"
 )
-ThisBuild / javacOptions ++= Seq("--release", "17")
+ThisBuild / javacOptions ++= Seq("--release", "21")
 
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
