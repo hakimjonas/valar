@@ -24,17 +24,36 @@ jobs:
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
+      - name: Cache Scala Native dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/coursier
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-scala-native-${{ hashFiles('**/build.sbt', 'project/**/*.scala', 'project/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-scala-native-
+
       - name: Run all checks (style, formatting, API compatibility)
         run: sbt check
 
-      - name: Run all tests on JVM
-        run: sbt valarCoreJVM/test valarMunitJVM/test
+      - name: Run tests with coverage on JVM
+        run: sbt coverage valarCoreJVM/test valarMunitJVM/test valarTranslatorJVM/test coverageReport
 
       - name: Run all tests on Scala Native
-        run: sbt valarCoreNative/test valarMunitNative/test
+        run: sbt valarCoreNative/test valarMunitNative/test valarTranslatorNative/test
 
       - name: Check documentation (mdoc)
         run: sbt "valarCoreJVM/mdoc --check"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./valar-core/jvm/target/scala-3.7.1/scoverage-report/scoverage.xml,./valar-munit/jvm/target/scala-3.7.1/scoverage-report/scoverage.xml,./valar-translator/jvm/target/scala-3.7.1/scoverage-report/scoverage.xml
+          flags: unittests
+          name: codecov-valar
+          fail_ci_if_error: false
 
   # Publish job: Runs only on tag pushes, publishes to Sonatype, creates GitHub release
   publish:
