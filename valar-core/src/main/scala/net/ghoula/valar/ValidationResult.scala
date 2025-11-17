@@ -173,8 +173,8 @@ object ValidationResult {
     * values. If any validation fails, returns `Invalid` containing '''all accumulated errors'''
     * from all failed validations.
     *
-    * This is the inverse of `traverse` - while `traverse` maps values to validations then
-    * combines them, `sequence` takes validations that are already computed and combines them.
+    * This is the inverse of `traverse` - while `traverse` maps values to validations then combines
+    * them, `sequence` takes validations that are already computed and combines them.
     *
     * @example
     *   {{{

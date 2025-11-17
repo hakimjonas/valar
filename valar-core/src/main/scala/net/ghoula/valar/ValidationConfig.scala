@@ -57,7 +57,7 @@ final case class ValidationConfig(
         ValidationResult.invalid(
           ValidationErrors.ValidationError(
             message =
-              s"Collection size ($size) exceeds maximum allowed size ($max). This limit protects against memory exhaustion attacks.",
+              s"$collectionType size ($size) exceeds maximum allowed size ($max). This limit protects against memory exhaustion attacks.",
             code = Some("validation.security.collection_too_large"),
             severity = Some("Error"),
             expected = Some(s"size <= $max"),
@@ -86,7 +86,7 @@ object ValidationConfig {
     *
     * These limits balance security with typical use cases. Adjust as needed for your application.
     */
-  def strict: ValidationConfig = ValidationConfig(
+  private[valar] def strict: ValidationConfig = ValidationConfig(
     maxCollectionSize = Some(10000),
     maxNestingDepth = Some(20)
   )

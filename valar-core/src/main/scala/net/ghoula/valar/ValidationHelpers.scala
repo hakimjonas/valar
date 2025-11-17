@@ -300,9 +300,9 @@ object ValidationHelpers {
     * list `()` is a Scala 3 convention allowing for calls like `regexMatch("a", "[b]")`.
     *
     * '''⚠️ SECURITY WARNING - ReDoS Vulnerability:''' This method is '''UNSAFE''' for untrusted
-    * regex patterns. See [[regexMatch(s: String, patternString: String)(errorMessage: String =>
-    * String)]] for full security documentation. Only use this with developer-controlled,
-    * hardcoded patterns.
+    * regex patterns. See
+    * [[regexMatch(s: String, patternString: String)(errorMessage: String => String)]] for full
+    * security documentation. Only use this with developer-controlled, hardcoded patterns.
     *
     * @param s
     *   The string to validate.

@@ -148,31 +148,32 @@ object Validator {
     * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
     * the map size before processing entries, failing fast if the limit is exceeded.
     */
-  given mapValidator[K, V](using vk: Validator[K], vv: Validator[V], config: ValidationConfig): Validator[Map[K, V]] with {
+  given mapValidator[K, V](using vk: Validator[K], vv: Validator[V], config: ValidationConfig): Validator[Map[K, V]]
+  with {
     def validate(m: Map[K, V]): ValidationResult[Map[K, V]] = {
       config.checkCollectionSize(m.size, "Map").flatMap { _ =>
-      val results = m.map { case (k, v) =>
-        val validatedKey: ValidationResult[K] = vk.validate(k) match {
-          case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
-          case ValidationResult.Invalid(es) =>
-            ValidationResult.Invalid(
-              es.map(e => e.annotateField("key", k.getClass.getSimpleName))
-            )
+        val results = m.map { case (k, v) =>
+          val validatedKey: ValidationResult[K] = vk.validate(k) match {
+            case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
+            case ValidationResult.Invalid(es) =>
+              ValidationResult.Invalid(
+                es.map(e => e.annotateField("key", k.getClass.getSimpleName))
+              )
+          }
+          val validatedValue: ValidationResult[V] = vv.validate(v) match {
+            case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
+            case ValidationResult.Invalid(es) =>
+              ValidationResult.Invalid(
+                es.map(e => e.annotateField("value", v.getClass.getSimpleName))
+              )
+          }
+          validatedKey.zip(validatedValue)
         }
-        val validatedValue: ValidationResult[V] = vv.validate(v) match {
-          case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
-          case ValidationResult.Invalid(es) =>
-            ValidationResult.Invalid(
-              es.map(e => e.annotateField("value", v.getClass.getSimpleName))
-            )
+        val (errors, validPairs) = results.foldLeft((Vector.empty[ValidationError], Map.empty[K, V])) {
+          case ((errs, acc), ValidationResult.Valid(pair)) => (errs, acc + pair)
+          case ((errs, acc), ValidationResult.Invalid(e2)) => (errs ++ e2, acc)
         }
-        validatedKey.zip(validatedValue)
-      }
-      val (errors, validPairs) = results.foldLeft((Vector.empty[ValidationError], Map.empty[K, V])) {
-        case ((errs, acc), ValidationResult.Valid(pair)) => (errs, acc + pair)
-        case ((errs, acc), ValidationResult.Invalid(e2)) => (errs ++ e2, acc)
-      }
-      if errors.isEmpty then ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
+        if errors.isEmpty then ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
       }
     }
   }
@@ -212,7 +213,8 @@ object Validator {
     * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
     * the collection size before processing elements, failing fast if the limit is exceeded.
     */
-  given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[ArraySeq[A]] with {
+  given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[ArraySeq[A]]
+  with {
     def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] =
       config.checkCollectionSize(xs.size, "ArraySeq").flatMap { _ =>
         validateIterable(xs, (validValues: Vector[A]) => ArraySeq.unsafeWrapArray(validValues.toArray))
