@@ -55,7 +55,7 @@ object ValidationHelpers {
     Option(value) match {
       case Some(v) => validationFn(v).map(Some(_))
       case None =>
-        if (errorOnEmpty) ValidationResult.invalid(ValidationError(emptyErrorMsg))
+        if (errorOnEmpty) ValidationResult.invalid(ValidationError(emptyErrorMsg, code = Some("validation.required")))
         else ValidationResult.Valid(None)
     }
   }
@@ -79,11 +79,21 @@ object ValidationHelpers {
       case Some(str) if str.trim.nonEmpty => ValidationResult.Valid(str)
       case Some(str) =>
         ValidationResult.invalid(
-          ValidationError(message = errorMessage(str), expected = Some("non-empty string"), actual = Some(str))
+          ValidationError(
+            message = errorMessage(str),
+            code = Some("validation.string.empty"),
+            expected = Some("non-empty string"),
+            actual = Some(str)
+          )
         )
       case None =>
         ValidationResult.invalid(
-          ValidationError(message = errorMessage("null"), expected = Some("non-empty string"), actual = Some("null"))
+          ValidationError(
+            message = errorMessage("null"),
+            code = Some("validation.string.null"),
+            expected = Some("non-empty string"),
+            actual = Some("null")
+          )
         )
     }
   }
@@ -101,7 +111,12 @@ object ValidationHelpers {
     if (i >= 0) ValidationResult.Valid(i)
     else
       ValidationResult.invalid(
-        ValidationError(message = errorMessage(i), expected = Some(">= 0"), actual = Some(i.toString))
+        ValidationError(
+          message = errorMessage(i),
+          code = Some("validation.number.negative"),
+          expected = Some(">= 0"),
+          actual = Some(i.toString)
+        )
       )
 
   /** Validates that a numeric value is finite (not NaN or infinite).
@@ -121,7 +136,12 @@ object ValidationHelpers {
     if (isFinite(value)) ValidationResult.Valid(value)
     else
       ValidationResult.invalid(
-        ValidationError(message = errorMessage(value), expected = Some("finite value"), actual = Some(value.toString))
+        ValidationError(
+          message = errorMessage(value),
+          code = Some("validation.number.not_finite"),
+          expected = Some("finite value"),
+          actual = Some(value.toString)
+        )
       )
   }
 
@@ -169,13 +189,19 @@ object ValidationHelpers {
         ValidationResult.invalid(
           ValidationError(
             message = errorMessage(str),
+            code = Some("validation.string.too_short"),
             expected = Some(s"length >= $min"),
             actual = Some(str.length.toString)
           )
         )
       case None =>
         ValidationResult.invalid(
-          ValidationError(message = errorMessage("null"), expected = Some(s"length >= $min"), actual = Some("null"))
+          ValidationError(
+            message = errorMessage("null"),
+            code = Some("validation.string.null"),
+            expected = Some(s"length >= $min"),
+            actual = Some("null")
+          )
         )
     }
   }
@@ -193,6 +219,7 @@ object ValidationHelpers {
         ValidationResult.invalid(
           ValidationError(
             message = errorMessage(str),
+            code = Some("validation.string.too_long"),
             expected = Some(s"length <= $max"),
             actual = Some(str.length.toString)
           )
@@ -201,6 +228,7 @@ object ValidationHelpers {
         ValidationResult.invalid(
           ValidationError(
             message = "Input must be a non-null string (actual: null)",
+            code = Some("validation.string.null"),
             expected = Some(s"non-null string with length <= $max"),
             actual = Some("null")
           )
@@ -226,12 +254,18 @@ object ValidationHelpers {
       case Some(str) if regex.matches(str) => ValidationResult.Valid(str)
       case Some(str) =>
         ValidationResult.invalid(
-          ValidationError(message = errorMessage(str), expected = Some(regex.pattern.toString), actual = Some(str))
+          ValidationError(
+            message = errorMessage(str),
+            code = Some("validation.string.pattern_mismatch"),
+            expected = Some(regex.pattern.toString),
+            actual = Some(str)
+          )
         )
       case None =>
         ValidationResult.invalid(
           ValidationError(
             message = errorMessage("null"),
+            code = Some("validation.string.null"),
             expected = Some(regex.pattern.toString),
             actual = Some("null")
           )
@@ -327,7 +361,12 @@ object ValidationHelpers {
     if (i >= min && i <= max) ValidationResult.Valid(i)
     else
       ValidationResult.invalid(
-        ValidationError(message = errorMessage(i), expected = Some(s"[$min, $max]"), actual = Some(i.toString))
+        ValidationError(
+          message = errorMessage(i),
+          code = Some("validation.number.out_of_range"),
+          expected = Some(s"[$min, $max]"),
+          actual = Some(i.toString)
+        )
       )
   }
 
@@ -343,6 +382,7 @@ object ValidationHelpers {
       ValidationResult.invalid(
         ValidationError(
           message = errorMessage(a),
+          code = Some("validation.value.not_in_set"),
           expected = Some(validValues.mkString(", ")),
           actual = Some(a.toString)
         )
@@ -364,7 +404,12 @@ object ValidationHelpers {
       case Some(value) => ValidationResult.Valid(value)
       case None =>
         ValidationResult.invalid(
-          ValidationError(message = errorMessage, expected = Some("defined Option (Some)"), actual = Some("None"))
+          ValidationError(
+            message = errorMessage,
+            code = Some("validation.required"),
+            expected = Some("defined Option (Some)"),
+            actual = Some("None")
+          )
         )
     }
   }

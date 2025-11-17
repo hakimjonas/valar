@@ -79,12 +79,19 @@ object AsyncValidator {
     * collection types. It validates each element in the collection asynchronously and accumulates
     * both errors and valid results.
     *
+    * '''Security Note:''' This method enforces size limits from `ValidationConfig` before
+    * processing elements to prevent memory exhaustion attacks from maliciously large collections.
+    *
     * @param items
     *   the collection of items to validate
     * @param validator
     *   the validator for individual items
     * @param buildResult
     *   function to construct the final collection from valid items
+    * @param collectionType
+    *   description of the collection type for error messages
+    * @param config
+    *   validation configuration for security limits
     * @param ec
     *   execution context for async operations
     * @return
@@ -93,19 +100,24 @@ object AsyncValidator {
   private def validateCollection[A, C[_]](
     items: Iterable[A],
     validator: AsyncValidator[A],
-    buildResult: Iterable[A] => C[A]
-  )(using ec: ExecutionContext): Future[ValidationResult[C[A]]] = {
-    val futureResults = items.map { item =>
-      validator.validateAsync(item).map {
-        case ValidationResult.Valid(a) => ValidationResult.Valid(a)
-        case ValidationResult.Invalid(errors) => ValidationResult.Invalid(errors)
-      }
-    }
+    buildResult: Iterable[A] => C[A],
+    collectionType: String
+  )(using config: ValidationConfig, ec: ExecutionContext): Future[ValidationResult[C[A]]] = {
+    config.checkCollectionSize(items.size, collectionType) match {
+      case ValidationResult.Invalid(errors) => Future.successful(ValidationResult.Invalid(errors))
+      case ValidationResult.Valid(_) =>
+        val futureResults = items.map { item =>
+          validator.validateAsync(item).map {
+            case ValidationResult.Valid(a) => ValidationResult.Valid(a)
+            case ValidationResult.Invalid(errors) => ValidationResult.Invalid(errors)
+          }
+        }
 
-    Future.sequence(futureResults).map { results =>
-      val (errors, validValues) = foldValidationResults(results, Vector.empty[A], _ :+ _)
-      if (errors.isEmpty) ValidationResult.Valid(buildResult(validValues))
-      else ValidationResult.Invalid(errors)
+        Future.sequence(futureResults).map { results =>
+          val (errors, validValues) = foldValidationResults(results, Vector.empty[A], _ :+ _)
+          if (errors.isEmpty) ValidationResult.Valid(buildResult(validValues))
+          else ValidationResult.Invalid(errors)
+        }
     }
   }
 
@@ -138,14 +150,19 @@ object AsyncValidator {
     * collected. Errors from individual elements are accumulated while preserving the order of valid
     * elements.
     *
+    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
+    * prevent DoS attacks via extremely large lists.
+    *
     * @param v
     *   the validator for list elements
+    * @param config
+    *   validation configuration for security limits
     * @return
     *   an AsyncValidator that handles lists
     */
-  given listAsyncValidator[A](using v: AsyncValidator[A]): AsyncValidator[List[A]] with {
+  given listAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[List[A]] with {
     def validateAsync(xs: List[A])(using ec: ExecutionContext): Future[ValidationResult[List[A]]] =
-      validateCollection(xs, v, _.toList)
+      validateCollection(xs, v, _.toList, "List")
   }
 
   /** Asynchronous validator for sequences.
@@ -155,14 +172,19 @@ object AsyncValidator {
     * collected. Errors from individual elements are accumulated while preserving the order of valid
     * elements.
     *
+    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
+    * prevent DoS attacks via extremely large sequences.
+    *
     * @param v
     *   the validator for sequence elements
+    * @param config
+    *   validation configuration for security limits
     * @return
     *   an AsyncValidator that handles sequences
     */
-  given seqAsyncValidator[A](using v: AsyncValidator[A]): AsyncValidator[Seq[A]] with {
+  given seqAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Seq[A]] with {
     def validateAsync(xs: Seq[A])(using ec: ExecutionContext): Future[ValidationResult[Seq[A]]] =
-      validateCollection(xs, v, _.toSeq)
+      validateCollection(xs, v, _.toSeq, "Seq")
   }
 
   /** Asynchronous validator for vectors.
@@ -172,14 +194,19 @@ object AsyncValidator {
     * collected. Errors from individual elements are accumulated while preserving the order of valid
     * elements.
     *
+    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
+    * prevent DoS attacks via extremely large vectors.
+    *
     * @param v
     *   the validator for vector elements
+    * @param config
+    *   validation configuration for security limits
     * @return
     *   an AsyncValidator that handles vectors
     */
-  given vectorAsyncValidator[A](using v: AsyncValidator[A]): AsyncValidator[Vector[A]] with {
+  given vectorAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Vector[A]] with {
     def validateAsync(xs: Vector[A])(using ec: ExecutionContext): Future[ValidationResult[Vector[A]]] =
-      validateCollection(xs, v, _.toVector)
+      validateCollection(xs, v, _.toVector, "Vector")
   }
 
   /** Asynchronous validator for sets.
@@ -188,14 +215,19 @@ object AsyncValidator {
     * All validation futures are executed concurrently, and their results are collected. Errors from
     * individual elements are accumulated while preserving the valid elements in the resulting set.
     *
+    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
+    * prevent DoS attacks via extremely large sets.
+    *
     * @param v
     *   the validator for set elements
+    * @param config
+    *   validation configuration for security limits
     * @return
     *   an AsyncValidator that handles sets
     */
-  given setAsyncValidator[A](using v: AsyncValidator[A]): AsyncValidator[Set[A]] with {
+  given setAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Set[A]] with {
     def validateAsync(xs: Set[A])(using ec: ExecutionContext): Future[ValidationResult[Set[A]]] =
-      validateCollection(xs, v, _.toSet)
+      validateCollection(xs, v, _.toSet, "Set")
   }
 
   /** Asynchronous validator for maps.
@@ -205,36 +237,49 @@ object AsyncValidator {
     * are collected. Errors from individual keys and values are accumulated with proper field path
     * annotation, while valid key-value pairs are preserved in the resulting map.
     *
+    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
+    * prevent DoS attacks via extremely large maps.
+    *
     * @param vk
     *   the validator for map keys
     * @param vv
     *   the validator for map values
+    * @param config
+    *   validation configuration for security limits
     * @return
     *   an AsyncValidator that handles maps
     */
-  given mapAsyncValidator[K, V](using vk: AsyncValidator[K], vv: AsyncValidator[V]): AsyncValidator[Map[K, V]] with {
+  given mapAsyncValidator[K, V](using
+    vk: AsyncValidator[K],
+    vv: AsyncValidator[V],
+    config: ValidationConfig
+  ): AsyncValidator[Map[K, V]] with {
     def validateAsync(m: Map[K, V])(using ec: ExecutionContext): Future[ValidationResult[Map[K, V]]] = {
-      val futureResults = m.map { case (k, v) =>
-        val futureKey = vk.validateAsync(k).map {
-          case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
-          case ValidationResult.Invalid(es) =>
-            ValidationResult.Invalid(es.map(_.annotateField("key", k.getClass.getSimpleName)))
-        }
-        val futureValue = vv.validateAsync(v).map {
-          case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
-          case ValidationResult.Invalid(es) =>
-            ValidationResult.Invalid(es.map(_.annotateField("value", v.getClass.getSimpleName)))
-        }
+      config.checkCollectionSize(m.size, "Map") match {
+        case ValidationResult.Invalid(errors) => Future.successful(ValidationResult.Invalid(errors))
+        case ValidationResult.Valid(_) =>
+          val futureResults = m.map { case (k, v) =>
+            val futureKey = vk.validateAsync(k).map {
+              case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
+              case ValidationResult.Invalid(es) =>
+                ValidationResult.Invalid(es.map(_.annotateField("key", k.getClass.getSimpleName)))
+            }
+            val futureValue = vv.validateAsync(v).map {
+              case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
+              case ValidationResult.Invalid(es) =>
+                ValidationResult.Invalid(es.map(_.annotateField("value", v.getClass.getSimpleName)))
+            }
 
-        for {
-          keyResult <- futureKey
-          valueResult <- futureValue
-        } yield keyResult.zip(valueResult)
-      }
+            for {
+              keyResult <- futureKey
+              valueResult <- futureValue
+            } yield keyResult.zip(valueResult)
+          }
 
-      Future.sequence(futureResults).map { results =>
-        val (errors, validPairs) = foldValidationResults(results, Map.empty[K, V], _ + _)
-        if (errors.isEmpty) ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
+          Future.sequence(futureResults).map { results =>
+            val (errors, validPairs) = foldValidationResults(results, Map.empty[K, V], _ + _)
+            if (errors.isEmpty) ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
+          }
       }
     }
   }
