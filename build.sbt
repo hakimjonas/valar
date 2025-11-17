@@ -39,6 +39,11 @@ ThisBuild / scalacOptions ++= Seq(
 )
 ThisBuild / javacOptions ++= Seq("--release", "17")
 
+// ===== Code Coverage Settings =====
+ThisBuild / coverageMinimumStmtTotal := 80
+ThisBuild / coverageFailOnMinimum := false
+ThisBuild / coverageHighlighting := true
+
 // ===== Project Definitions =====
 lazy val root = (project in file("."))
   .aggregate(

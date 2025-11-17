@@ -25,3 +25,6 @@ addSbtPlugin("ch.epfl.scala" % "sbt-tasty-mima" % "1.3.0")
 
 // Benchmarking
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.7")
+
+// Code coverage
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.2.2")
