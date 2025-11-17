@@ -389,6 +389,44 @@ libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
 ```
 
+## **Security Considerations**
+
+When using Valar with untrusted user input, please be aware of the following security considerations:
+
+### **Regular Expression Denial of Service (ReDoS)**
+
+⚠️ **Warning:** The `regexMatch` methods that accept `String` patterns are vulnerable to ReDoS attacks when used with untrusted input.
+
+**Safe Practice:**
+```scala
+// ✅ SAFE - Use pre-compiled regex patterns
+val emailPattern = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$".r
+regexMatch(userInput, emailPattern)(_ => "Invalid email")
+```
+
+**Unsafe Practice:**
+```scala
+// ❌ UNSAFE - Never pass user-provided patterns!
+val userPattern = request.getParameter("pattern")
+regexMatch(value, userPattern)(_ => "Invalid")  // ReDoS vulnerability!
+```
+
+### **Input Size Limits**
+
+When validating collections or deeply nested structures from untrusted sources, consider implementing size limits to prevent:
+- Memory exhaustion from extremely large collections
+- Stack overflow from deeply nested structures
+- CPU exhaustion from expensive validation operations
+
+**Recommendation:** Validate and limit collection sizes before passing data to Valar validators.
+
+### **Error Information Disclosure**
+
+`ValidationError` objects include detailed information about what was expected vs. what was received. When exposing validation errors to end users:
+- Review error messages for sensitive information
+- Consider using the `valar-translator` module to provide user-friendly, sanitized messages
+- Be cautious about exposing internal field names or structure
+
 ## **Compatibility**
 
 * **Scala:** 3.7+

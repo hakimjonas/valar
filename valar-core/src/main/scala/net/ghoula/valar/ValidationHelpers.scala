@@ -242,10 +242,36 @@ object ValidationHelpers {
   /** Validates a string against a string pattern. This overload handles potential
     * `java.util.regex.PatternSyntaxException` by returning an `Invalid` result.
     *
+    * '''⚠️ SECURITY WARNING - ReDoS Vulnerability:''' This method accepts user-provided regex
+    * patterns and is '''UNSAFE''' for untrusted input. Maliciously crafted regex patterns can cause
+    * catastrophic backtracking (Regular Expression Denial of Service - ReDoS), leading to CPU
+    * exhaustion and application hang.
+    *
+    * '''Recommendations:'''
+    *   - For '''production use with untrusted input''': Use [[regexMatch(s: String, regex: Regex)]]
+    *     with pre-compiled, developer-controlled regex patterns
+    *   - For '''developer-defined validators only''': This method is safe when the pattern is
+    *     hardcoded in your application code
+    *   - '''Never''' pass user-submitted regex patterns to this method
+    *
+    * '''Example of UNSAFE usage:'''
+    * {{{
+    * // DO NOT DO THIS - userInput could be malicious!
+    * val userPattern = request.getParameter("pattern")
+    * regexMatch(value, userPattern)(_ => "Invalid")
+    * }}}
+    *
+    * '''Example of SAFE usage:'''
+    * {{{
+    * // SAFE - pattern is developer-controlled
+    * regexMatch(email, "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$")(_ => "Invalid email")
+    * }}}
+    *
     * @param s
     *   The string to validate.
     * @param patternString
-    *   The string representation of the regex pattern.
+    *   The string representation of the regex pattern. '''Must be developer-controlled, not
+    *   user-provided.'''
     * @param errorMessage
     *   A function that produces an error message.
     * @return
@@ -273,10 +299,16 @@ object ValidationHelpers {
   /** Validates a string against a string pattern using a default error message. The empty parameter
     * list `()` is a Scala 3 convention allowing for calls like `regexMatch("a", "[b]")`.
     *
+    * '''⚠️ SECURITY WARNING - ReDoS Vulnerability:''' This method is '''UNSAFE''' for untrusted
+    * regex patterns. See [[regexMatch(s: String, patternString: String)(errorMessage: String =>
+    * String)]] for full security documentation. Only use this with developer-controlled,
+    * hardcoded patterns.
+    *
     * @param s
     *   The string to validate.
     * @param patternString
-    *   The string representation of the regex pattern.
+    *   The string representation of the regex pattern. '''Must be developer-controlled, not
+    *   user-provided.'''
     * @return
     *   A `ValidationResult` with the original string or an error.
     */
