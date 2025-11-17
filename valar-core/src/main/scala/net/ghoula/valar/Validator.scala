@@ -71,57 +71,86 @@ object Validator {
       optional(opt)(using v)
   }
 
-  /** Validates a `List[A]` by validating each element. */
-  given listValidator[A](using v: Validator[A]): Validator[List[A]] with {
+  /** Validates a `List[A]` by validating each element.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the collection size before processing elements, failing fast if the limit is exceeded.
+    */
+  given listValidator[A](using v: Validator[A], config: ValidationConfig): Validator[List[A]] with {
     def validate(xs: List[A]): ValidationResult[List[A]] = {
-      val results = xs.map(v.validate)
-      val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], List.empty[A])) {
-        case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-        case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+      config.checkCollectionSize(xs.size, "List").flatMap { _ =>
+        val results = xs.map(v.validate)
+        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], List.empty[A])) {
+          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
+          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+        }
+        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
       }
-      if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
     }
   }
 
-  /** Validates a `Seq[A]` by validating each element. */
-  given seqValidator[A](using v: Validator[A]): Validator[Seq[A]] with {
+  /** Validates a `Seq[A]` by validating each element.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the collection size before processing elements, failing fast if the limit is exceeded.
+    */
+  given seqValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Seq[A]] with {
     def validate(xs: Seq[A]): ValidationResult[Seq[A]] = {
-      val results = xs.map(v.validate)
-      val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Seq.empty[A])) {
-        case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-        case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+      config.checkCollectionSize(xs.size, "Seq").flatMap { _ =>
+        val results = xs.map(v.validate)
+        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Seq.empty[A])) {
+          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
+          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+        }
+        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
       }
-      if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
     }
   }
 
-  /** Validates a `Vector[A]` by validating each element. */
-  given vectorValidator[A](using v: Validator[A]): Validator[Vector[A]] with {
+  /** Validates a `Vector[A]` by validating each element.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the collection size before processing elements, failing fast if the limit is exceeded.
+    */
+  given vectorValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Vector[A]] with {
     def validate(xs: Vector[A]): ValidationResult[Vector[A]] = {
-      val results = xs.map(v.validate)
-      val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
-        case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-        case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+      config.checkCollectionSize(xs.size, "Vector").flatMap { _ =>
+        val results = xs.map(v.validate)
+        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
+          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
+          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+        }
+        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
       }
-      if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
     }
   }
 
-  /** Validates a `Set[A]` by validating each element. */
-  given setValidator[A](using v: Validator[A]): Validator[Set[A]] with {
+  /** Validates a `Set[A]` by validating each element.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the collection size before processing elements, failing fast if the limit is exceeded.
+    */
+  given setValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Set[A]] with {
     def validate(xs: Set[A]): ValidationResult[Set[A]] = {
-      val results = xs.map(v.validate)
-      val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Set.empty[A])) {
-        case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals + a)
-        case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+      config.checkCollectionSize(xs.size, "Set").flatMap { _ =>
+        val results = xs.map(v.validate)
+        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Set.empty[A])) {
+          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals + a)
+          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
+        }
+        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
       }
-      if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
     }
   }
 
-  /** Validates a `Map[K, V]` by validating each key and value. */
-  given mapValidator[K, V](using vk: Validator[K], vv: Validator[V]): Validator[Map[K, V]] with {
+  /** Validates a `Map[K, V]` by validating each key and value.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the map size before processing entries, failing fast if the limit is exceeded.
+    */
+  given mapValidator[K, V](using vk: Validator[K], vv: Validator[V], config: ValidationConfig): Validator[Map[K, V]] with {
     def validate(m: Map[K, V]): ValidationResult[Map[K, V]] = {
+      config.checkCollectionSize(m.size, "Map").flatMap { _ =>
       val results = m.map { case (k, v) =>
         val validatedKey: ValidationResult[K] = vk.validate(k) match {
           case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
@@ -144,6 +173,7 @@ object Validator {
         case ((errs, acc), ValidationResult.Invalid(e2)) => (errs ++ e2, acc)
       }
       if errors.isEmpty then ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
+      }
     }
   }
 
@@ -165,16 +195,28 @@ object Validator {
     else ValidationResult.Invalid(errors)
   }
 
-  /** Validates an `Array[A]`. */
-  given arrayValidator[A](using v: Validator[A], ct: ClassTag[A]): Validator[Array[A]] with {
+  /** Validates an `Array[A]`.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the array size before processing elements, failing fast if the limit is exceeded.
+    */
+  given arrayValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[Array[A]] with {
     def validate(xs: Array[A]): ValidationResult[Array[A]] =
-      validateIterable(xs, (validValues: Vector[A]) => validValues.toArray)
+      config.checkCollectionSize(xs.length, "Array").flatMap { _ =>
+        validateIterable(xs, (validValues: Vector[A]) => validValues.toArray)
+      }
   }
 
-  /** Validates an `ArraySeq[A]`. */
-  given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A]): Validator[ArraySeq[A]] with {
+  /** Validates an `ArraySeq[A]`.
+    *
+    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
+    * the collection size before processing elements, failing fast if the limit is exceeded.
+    */
+  given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[ArraySeq[A]] with {
     def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] =
-      validateIterable(xs, (validValues: Vector[A]) => ArraySeq.unsafeWrapArray(validValues.toArray))
+      config.checkCollectionSize(xs.size, "ArraySeq").flatMap { _ =>
+        validateIterable(xs, (validValues: Vector[A]) => ArraySeq.unsafeWrapArray(validValues.toArray))
+      }
   }
 
   /** Validates an intersection type `A & B`. */
