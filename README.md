@@ -90,11 +90,59 @@ Valar provides artifacts for both JVM and Scala Native platforms:
 
 > **Note:** When using the `%%%` operator in sbt, the correct platform-specific artifact will be selected automatically.
 
+## **Performance**
+
+Valar is designed for high performance with minimal overhead:
+
+### **Complexity Characteristics**
+
+| Operation | Time Complexity | Space Complexity | Notes |
+|-----------|----------------|------------------|-------|
+| Case class derivation | O(1) - compile-time | N/A | Zero runtime cost, fully inlined |
+| Single field validation | O(1) | O(1) | Typically <100ns for simple types |
+| Collection validation (List, Vector, etc.) | O(n) | O(n) | n = collection size, with optional size limits |
+| Nested case class | O(fields) | O(errors) | Accumulates errors across all fields |
+| Union type validation | O(types) | O(errors) | Tries each type in the union |
+
+### **Performance Best Practices**
+
+1. **Use ValidationConfig limits** for untrusted input to prevent DoS:
+   ```scala
+   given ValidationConfig = ValidationConfig.strict // Limits collections to 10,000 elements
+   ```
+
+2. **Choose the right strategy**:
+   - **Error accumulation** (default): Collects all errors, best for user feedback
+   - **Fail-fast** (`.flatMap`): Stops at first error, best for performance
+
+3. **Avoid expensive operations** in validators:
+   - Database lookups
+   - Network calls
+   - Heavy computation
+
+   Consider `AsyncValidator` for I/O-bound validation.
+
+4. **Pre-validate at boundaries**: Check size limits before calling Valar:
+   ```scala
+   if (collection.size > 10000) return BadRequest("Too large")
+   ```
+
+### **Benchmark Results**
+
+Detailed performance benchmarks with JMH are available in the [valar-benchmarks module](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md).
+
+**Key findings:**
+- Simple validations: ~10-50 nanoseconds
+- Case class derivation: Zero runtime overhead (compile-time only)
+- Collection validation: Linear with collection size
+- Zero-cost abstractions: `ValidationObserver` with no-op has no runtime impact
+
 ## **Additional Resources**
 
 - 📊 **[Performance Benchmarks](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md)**: Detailed JMH benchmark results and analysis
 - 🧪 **[Testing Guide](https://github.com/hakimjonas/valar/blob/main/valar-munit/README.md)**: Enhanced testing utilities with ValarSuite
 - 🌐 **[Internationalization](https://github.com/hakimjonas/valar/blob/main/valar-translator/README.md)**: i18n support for validation error messages
+- 🔧 **[Troubleshooting Guide](https://github.com/hakimjonas/valar/blob/main/TROUBLESHOOTING.md)**: Common issues and solutions
 ## **Installation**
 
 Add the following to your build.sbt:
@@ -388,6 +436,60 @@ libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
 // With this (note the triple %%% for cross-platform support):
 libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
 ```
+
+## **Security Considerations**
+
+When using Valar with untrusted user input, please be aware of the following security considerations:
+
+### **Regular Expression Denial of Service (ReDoS)**
+
+⚠️ **Warning:** The `regexMatch` methods that accept `String` patterns are vulnerable to ReDoS attacks when used with untrusted input.
+
+**Safe Practice:**
+```scala
+// ✅ SAFE - Use pre-compiled regex patterns
+val emailPattern = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$".r
+regexMatch(userInput, emailPattern)(_ => "Invalid email")
+```
+
+**Unsafe Practice:**
+```scala
+// ❌ UNSAFE - Never pass user-provided patterns!
+val userPattern = request.getParameter("pattern")
+regexMatch(value, userPattern)(_ => "Invalid")  // ReDoS vulnerability!
+```
+
+### **Input Size Limits**
+
+Valar provides built-in protection against resource exhaustion through `ValidationConfig`:
+
+```scala
+// For untrusted user input - strict limits
+given ValidationConfig = ValidationConfig.strict // Max 10,000 elements
+
+// For trusted internal data - permissive limits
+given ValidationConfig = ValidationConfig.permissive // Max 1,000,000 elements
+
+// For complete control - custom limits
+given ValidationConfig = ValidationConfig(
+  maxCollectionSize = Some(5000),
+  maxNestingDepth = Some(20)
+)
+```
+
+When a collection exceeds the configured limit, validation fails immediately '''before''' processing any elements, preventing:
+- Memory exhaustion from extremely large collections
+- CPU exhaustion from processing millions of elements
+- Application hang or DoS attacks
+
+**Important:** Always use `ValidationConfig.strict` or custom limits when validating untrusted user input.
+
+### **Error Information Disclosure**
+
+`ValidationError` objects include detailed information about what was expected vs. what was received. When exposing validation errors to end users:
+- Review error messages for sensitive information
+- Consider using the `valar-translator` module to provide user-friendly, sanitized messages
+- Be cautious about exposing internal field names or structure
 
 ## **Compatibility**
 

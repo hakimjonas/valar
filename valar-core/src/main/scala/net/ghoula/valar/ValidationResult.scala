@@ -161,6 +161,102 @@ object ValidationResult {
         )
     }
 
+  /** Collection Operations
+    *
+    * Methods for working with collections of ValidationResults.
+    */
+
+  /** Combines a sequence of validation results into a single result containing all values.
+    *
+    * This method "sequences" a collection of independent validation results into a single
+    * validation result. If all validations succeed, returns `Valid` containing a list of all
+    * values. If any validation fails, returns `Invalid` containing '''all accumulated errors'''
+    * from all failed validations.
+    *
+    * This is the inverse of `traverse` - while `traverse` maps values to validations then combines
+    * them, `sequence` takes validations that are already computed and combines them.
+    *
+    * @example
+    *   {{{
+    * val validations = List(
+    *   ValidationResult.Valid(1),
+    *   ValidationResult.Valid(2),
+    *   ValidationResult.Valid(3)
+    * )
+    * ValidationResult.sequence(validations) // Valid(List(1, 2, 3))
+    *
+    * val mixed = List(
+    *   ValidationResult.Valid(1),
+    *   ValidationResult.invalid(ValidationError("error 1")),
+    *   ValidationResult.invalid(ValidationError("error 2"))
+    * )
+    * ValidationResult.sequence(mixed) // Invalid(Vector(error1, error2))
+    *   }}}
+    *
+    * @param results
+    *   A list of validation results to combine
+    * @param acc
+    *   Error accumulator for combining errors
+    * @tparam A
+    *   The type of the successful values
+    * @return
+    *   Valid(List[A]) if all succeed, or Invalid with all accumulated errors
+    */
+  def sequence[A](
+    results: List[ValidationResult[A]]
+  )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[List[A]] = {
+    results.foldLeft[ValidationResult[List[A]]](Valid(Nil)) { (accResult, current) =>
+      accResult.zip(current).map { case (list, value) => list :+ value }
+    }
+  }
+
+  /** Maps a function over a list and combines all validation results.
+    *
+    * This is a combination of `map` and `sequence` - it applies a validation function to each
+    * element in the input list, then combines all results. If all validations succeed, returns
+    * `Valid` with the list of successful values. If any fail, returns `Invalid` with '''all
+    * accumulated errors'''.
+    *
+    * This is more efficient than calling `list.map(f)` then `sequence` because it avoids creating
+    * an intermediate list of validation results.
+    *
+    * @example
+    *   {{{
+    * // Validate a list of strings are all non-empty
+    * val inputs = List("hello", "", "world")
+    * ValidationResult.traverse(inputs) { s =>
+    *   if (s.nonEmpty) ValidationResult.Valid(s.toUpperCase)
+    *   else ValidationResult.invalid(ValidationError("Empty string"))
+    * }
+    * // Returns Invalid with error about empty string
+    *
+    * // All valid case
+    * val valid = List("hello", "world")
+    * ValidationResult.traverse(valid)(s => ValidationResult.Valid(s.toUpperCase))
+    * // Returns Valid(List("HELLO", "WORLD"))
+    *   }}}
+    *
+    * @param inputs
+    *   The list of values to validate
+    * @param f
+    *   Function that validates each value
+    * @param acc
+    *   Error accumulator for combining errors
+    * @tparam A
+    *   Input type
+    * @tparam B
+    *   Output type after successful validation
+    * @return
+    *   Valid(List[B]) if all validations succeed, or Invalid with all accumulated errors
+    */
+  def traverse[A, B](inputs: List[A])(
+    f: A => ValidationResult[B]
+  )(using acc: ErrorAccumulator[Vector[ValidationError]]): ValidationResult[List[B]] = {
+    inputs.foldLeft[ValidationResult[List[B]]](Valid(Nil)) { (accResult, input) =>
+      accResult.zip(f(input)).map { case (list, value) => list :+ value }
+    }
+  }
+
   /** Specialized Validation Methods
     *
     * Methods for validating union types and performing type-safe conversions.
