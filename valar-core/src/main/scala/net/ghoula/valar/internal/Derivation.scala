@@ -259,7 +259,6 @@ object Derivation {
       aExpr: Expr[T],
       label: String,
       index: Int,
-      isOption: Boolean,
       validatorExpr: Expr[Validator[H]]
     ): Expr[ValidationResult[Any]] = {
       val labelExpr = Expr(label)
@@ -284,36 +283,16 @@ object Derivation {
         }
       }
 
-      if (isOption) {
-        // Option fields: null is valid (will be None), just validate
-        '{
-          val fieldValue: H = $fieldAccess
-          val result = $validatorExpr.validate(fieldValue)
-          annotateErrors(result, $labelExpr, fieldValue)
-        }
-      } else {
-        // Required fields: null triggers error
-        '{
-          val fieldValue: H = $fieldAccess
-          if (fieldValue == null) { // scalafix:ok DisableSyntax.null
-            ValidationResult.invalid(
-              ValidationError(
-                s"Field '${$labelExpr}' must not be null.",
-                List($labelExpr),
-                expected = Some("non-null value"),
-                actual = Some("null")
-              )
-            )
-          } else {
-            val result = $validatorExpr.validate(fieldValue)
-            annotateErrors(result, $labelExpr, fieldValue)
-          }
-        }
+      // Validate field - null handling is delegated to the field's Validator
+      // For Java interop or Spark, users can define null-aware validators
+      '{
+        val fieldValue: H = $fieldAccess
+        val result = $validatorExpr.validate(fieldValue)
+        annotateErrors(result, $labelExpr, fieldValue)
       }
     }
 
     // Generate all field validations at compile time
-    // Uses type-level IsOption[H] match type for compile-time Option detection
     def generateAllValidations[E <: Tuple: Type](
       aExpr: Expr[T],
       index: Int,
@@ -323,15 +302,9 @@ object Derivation {
         case '[EmptyTuple] => Nil
         case '[h *: t] =>
           val label = labels.head
-
-          // Type-level Option detection using quotes reflection
-          // Checks if h <:< Option[?] at macro expansion time
-          val isOption: Boolean = TypeRepr.of[h] <:< TypeRepr.of[Option[?]]
-
           // Safe to use .get - upfront validation guarantees validators exist
           val validatorExpr = Expr.summon[Validator[h]].get
-
-          val fieldValidation = generateFieldValidation[h](aExpr, label, index, isOption, validatorExpr)
+          val fieldValidation = generateFieldValidation[h](aExpr, label, index, validatorExpr)
           fieldValidation :: generateAllValidations[t](aExpr, index + 1, labels.tail)
       }
 
@@ -398,7 +371,6 @@ object Derivation {
       aExpr: Expr[T],
       label: String,
       index: Int,
-      isOption: Boolean,
       asyncValidatorExpr: Expr[AsyncValidator[H]]
     ): Expr[ExecutionContext => Future[ValidationResult[Any]]] = {
       val labelExpr = Expr(label)
@@ -422,50 +394,22 @@ object Derivation {
         }
       }
 
-      if (isOption) {
-        // Option fields: null is valid (will be None), just validate
-        '{ (ec: ExecutionContext) =>
-          given ExecutionContext = ec
-          val fieldValue: H = $fieldAccess
-          $asyncValidatorExpr.validateAsync(fieldValue)
-            .map(result => annotateErrors(result, $labelExpr, fieldValue))
-            .recover { case scala.util.control.NonFatal(ex) =>
-              ValidationResult.invalid(
-                ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
-              )
-            }
-        }
-      } else {
-        // Required fields: null triggers error
-        '{ (ec: ExecutionContext) =>
-          given ExecutionContext = ec
-          val fieldValue: H = $fieldAccess
-          if (fieldValue == null) { // scalafix:ok DisableSyntax.null
-            Future.successful(
-              ValidationResult.invalid(
-                ValidationError(
-                  s"Field '${$labelExpr}' must not be null.",
-                  List($labelExpr),
-                  expected = Some("non-null value"),
-                  actual = Some("null")
-                )
-              )
+      // Validate field - null handling is delegated to the field's AsyncValidator
+      // For Java interop or Spark, users can define null-aware validators
+      '{ (ec: ExecutionContext) =>
+        given ExecutionContext = ec
+        val fieldValue: H = $fieldAccess
+        $asyncValidatorExpr.validateAsync(fieldValue)
+          .map(result => annotateErrors(result, $labelExpr, fieldValue))
+          .recover { case scala.util.control.NonFatal(ex) =>
+            ValidationResult.invalid(
+              ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
             )
-          } else {
-            $asyncValidatorExpr.validateAsync(fieldValue)
-              .map(result => annotateErrors(result, $labelExpr, fieldValue))
-              .recover { case scala.util.control.NonFatal(ex) =>
-                ValidationResult.invalid(
-                  ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
-                )
-              }
           }
-        }
       }
     }
 
     // Generate all async field validations at compile time
-    // Uses type-level IsOption[H] match type for compile-time Option detection
     def generateAllAsyncValidations[E <: Tuple: Type](
       aExpr: Expr[T],
       index: Int,
@@ -475,11 +419,6 @@ object Derivation {
         case '[EmptyTuple] => Nil
         case '[h *: t] =>
           val label = labels.head
-
-          // Type-level Option detection using quotes reflection
-          // Checks if h <:< Option[?] at macro expansion time
-          val isOption: Boolean = TypeRepr.of[h] <:< TypeRepr.of[Option[?]]
-
           // Safe to use .get - upfront validation guarantees validators exist
           // Try AsyncValidator first, fall back to Validator
           val validatorExpr = Expr.summon[AsyncValidator[h]].orElse(Expr.summon[Validator[h]]).get
@@ -490,7 +429,7 @@ object Derivation {
             case '[Validator[`h`]] => '{ AsyncValidator.fromSync(${ validatorExpr.asExprOf[Validator[h]] }) }
           }
 
-          val fieldValidation = generateAsyncFieldValidation[h](aExpr, label, index, isOption, asyncValidatorExpr)
+          val fieldValidation = generateAsyncFieldValidation[h](aExpr, label, index, asyncValidatorExpr)
           fieldValidation :: generateAllAsyncValidations[t](aExpr, index + 1, labels.tail)
       }
 

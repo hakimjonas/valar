@@ -58,9 +58,6 @@ class ValidationSpec extends FunSuite {
   private case class Company(name: String, address: Address, ceo: Option[User])
   private given Validator[Company] = derive
 
-  private case class NullFieldTest(name: String, age: Int)
-  private given Validator[NullFieldTest] = derive
-
   /** Tests for collection type validators. */
 
   test("Collection Validators - listValidator") {
@@ -308,10 +305,6 @@ class ValidationSpec extends FunSuite {
       case ValidationResult.Invalid(errors) => assertEquals(errors.size, 3)
       case _ => fail("Expected Invalid")
     }
-  }
-
-  test("Macro Derivation - non-optional null field") {
-    assert(summon[Validator[NullFieldTest]].validate(NullFieldTest(Option.empty[String].orNull, 30)).isInvalid)
   }
 
   /** Tests for fail-fast validation operations. */

@@ -3,8 +3,7 @@ package net.ghoula.valar
 import munit.FunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.*
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 import net.ghoula.valar.ValidationErrors.ValidationError
 
@@ -25,9 +24,6 @@ class AsyncValidatorSpec extends FunSuite {
 
   /** A nested case class for testing recursive derivation. */
   private case class Company(name: String, owner: User)
-
-  /** A case class to test null handling. */
-  private case class Team(lead: User, name: String)
 
   /** A case class for testing collection validation. */
   private case class Post(title: String, comments: List[Comment])
@@ -118,13 +114,6 @@ class AsyncValidatorSpec extends FunSuite {
     * the nested User field, and the string validator is used for the company name.
     */
   private given companyAsyncValidator: AsyncValidator[Company] = AsyncValidator.derive
-
-  /** Team validator that reuses the user validation logic.
-    *
-    * This validator demonstrates automatic derivation where the existing user validator is used for
-    * the nested User field, and the string validator is used for the team name.
-    */
-  private given teamAsyncValidator: AsyncValidator[Team] = AsyncValidator.derive
 
   /** A derived validator for Comment that uses the async profanity filter for the text field.
     *
@@ -227,18 +216,6 @@ class AsyncValidatorSpec extends FunSuite {
         assertEquals(nameError.fieldPath, List("owner", "name"))
         assertEquals(ageError.fieldPath, List("owner", "age"))
       case _ => fail("Expected Invalid result")
-    }
-  }
-
-  test("validateAsync should fail if a non-optional field is null") {
-    @SuppressWarnings(Array("scalafix:DisableSyntax.null"))
-    val invalidTeam = Team(null, "The A-Team")
-    val result = Await.result(teamAsyncValidator.validateAsync(invalidTeam), 1.second)
-    result match {
-      case ValidationResult.Invalid(errors) =>
-        assertEquals(errors.size, 1)
-        assert(errors.head.message.contains("Field 'lead' must not be null."))
-      case _ => fail("Expected Invalid result for null field")
     }
   }
 
