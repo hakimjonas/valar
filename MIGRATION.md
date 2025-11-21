@@ -7,7 +7,7 @@ Version 0.5.0 introduces several new features while maintaining backward compati
 1. **New ValidationObserver trait** for observing validation outcomes without altering the flow
 2. **New valar-translator module** for internationalization support of validation error messages
 3. **Enhanced ValarSuite** with improved testing utilities
-4. **Reworked macros** for better performance and modern Scala 3 features
+4. **Reworked derivation** using modern Scala 3 inline metaprogramming
 5. **MiMa checks** to ensure binary compatibility between versions
 
 ### Update build.sbt:
