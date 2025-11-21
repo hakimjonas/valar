@@ -175,15 +175,16 @@ object Derivation {
             Expr.summon[Validator[h]].isDefined
           }
 
-          val newAcc = if (hasValidator) acc
-          else {
-            val suggestion = if (isAsync) {
-              s"given Validator[$fieldTypeStr] = ... or given AsyncValidator[$fieldTypeStr] = ..."
-            } else {
-              s"given Validator[$fieldTypeStr] = ..."
+          val newAcc =
+            if (hasValidator) acc
+            else {
+              val suggestion = if (isAsync) {
+                s"given Validator[$fieldTypeStr] = ... or given AsyncValidator[$fieldTypeStr] = ..."
+              } else {
+                s"given Validator[$fieldTypeStr] = ..."
+              }
+              MissingValidator(label, fieldTypeStr, suggestion) :: acc
             }
-            MissingValidator(label, fieldTypeStr, suggestion) :: acc
-          }
 
           collectMissing[t](remainingLabels.tail, newAcc)
       }
@@ -192,7 +193,8 @@ object Derivation {
 
     if (missing.nonEmpty) {
       val validatorType = if (isAsync) "AsyncValidator" else "Validator"
-      val header = s"Cannot derive $validatorType for ${Type.show[T]}: missing validators for ${missing.length} field(s).\n"
+      val header =
+        s"Cannot derive $validatorType for ${Type.show[T]}: missing validators for ${missing.length} field(s).\n"
 
       val details = missing.zipWithIndex.map { case (m, i) =>
         s"  ${i + 1}. Field '${m.fieldName}' of type ${m.fieldType}\n" +
@@ -279,7 +281,9 @@ object Derivation {
           // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
           // See: scala.NamedTuple.apply uses asInstanceOf for element access
           val indexExpr = Expr(index)
-          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] } // scalafix:ok DisableSyntax.asInstanceOf
+          '{
+            $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H]
+          } // scalafix:ok DisableSyntax.asInstanceOf
         }
       }
 
@@ -390,7 +394,9 @@ object Derivation {
         } else {
           // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
           val indexExpr = Expr(index)
-          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] } // scalafix:ok DisableSyntax.asInstanceOf
+          '{
+            $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H]
+          } // scalafix:ok DisableSyntax.asInstanceOf
         }
       }
 
@@ -399,7 +405,8 @@ object Derivation {
       '{ (ec: ExecutionContext) =>
         given ExecutionContext = ec
         val fieldValue: H = $fieldAccess
-        $asyncValidatorExpr.validateAsync(fieldValue)
+        $asyncValidatorExpr
+          .validateAsync(fieldValue)
           .map(result => annotateErrors(result, $labelExpr, fieldValue))
           .recover { case scala.util.control.NonFatal(ex) =>
             ValidationResult.invalid(

@@ -7,15 +7,14 @@ import scala.concurrent.Future
 
 import net.ghoula.valar.ValidationErrors.ValidationError
 
-/** Provides a comprehensive test suite for the [[AsyncValidator]] typeclass and its derivation.
+/** Tests the [[AsyncValidator]] typeclass and its derivation.
   *
-  * This spec verifies all core functionalities of the asynchronous validation mechanism:
-  *   - Successful validation of valid objects.
-  *   - Correct handling of failures from synchronous validators within an async context.
-  *   - Correct handling of failures from native asynchronous validators.
-  *   - Proper accumulation of errors from both sync and async sources.
-  *   - Correct validation of nested case classes with proper error path annotation.
-  *   - Robustness against null values, optional fields, collections, and exceptions within Futures.
+  * Covers:
+  *   - Successful validation of valid objects
+  *   - Handling of failures from sync and async validators
+  *   - Error accumulation from both sources
+  *   - Nested case class validation with proper error paths
+  *   - Optional fields, collections, and Future exception recovery
   */
 class AsyncValidatorSpec extends FunSuite {
 

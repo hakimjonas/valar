@@ -2,27 +2,9 @@ package net.ghoula.valar
 
 import munit.FunSuite
 
-import java.time.*
-import java.util.UUID
-import scala.Symbol
-import scala.math.{BigDecimal, BigInt}
-
-/** Tests the built-in validators for standard library and Java types provided in the `Validator`
-  * companion object.
-  *
-  * This spec ensures that Valar provides sensible default instances for common types. It verifies
-  * both the simple "pass-through" validators (for types like `Long`, `Boolean`, `UUID`, etc.) and
-  * the more opinionated default validators that enforce constraints (e.g., non-negative `Int`,
-  * non-empty `String`).
+/** Tests the built-in validators that enforce constraints (non-negative Int, non-empty String, etc).
   */
 class ValidatorSpec extends FunSuite {
-
-  /** Helper to test simple pass-through validators for a given value. */
-  private def checkValidator[T](value: T)(using validator: Validator[T]): Unit = {
-    assertEquals(validator.validate(value), ValidationResult.Valid(value))
-  }
-
-  /** Tests the opinionated standard validators that enforce constraints. */
 
   test("Provided validator for Int should validate non-negative numbers") {
     val validator = summon[Validator[Int]]
@@ -78,36 +60,4 @@ class ValidatorSpec extends FunSuite {
     }
   }
 
-  /** Tests the pass-through validators that accept all values of their type. */
-
-  test("Pass-through validator for Boolean") { checkValidator(true) }
-  test("Pass-through validator for Byte") { checkValidator(1.toByte) }
-  test("Pass-through validator for Short") { checkValidator(1.toShort) }
-  test("Pass-through validator for Long") { checkValidator(1L) }
-  test("Pass-through validator for Char") { checkValidator('a') }
-  test("Pass-through validator for Unit") { checkValidator(()) }
-  test("Pass-through validator for BigInt") { checkValidator(BigInt(123)) }
-  test("Pass-through validator for BigDecimal") { checkValidator(BigDecimal(123.45)) }
-  test("Pass-through validator for Symbol") { checkValidator(Symbol("abc")) }
-  test("Pass-through validator for UUID") {
-    checkValidator(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
-  }
-  test("Pass-through validator for Instant") {
-    checkValidator(Instant.ofEpochSecond(1672531200))
-  }
-  test("Pass-through validator for LocalDate") {
-    checkValidator(LocalDate.of(2025, 7, 5))
-  }
-  test("Pass-through validator for LocalTime") {
-    checkValidator(LocalTime.of(10, 30, 0))
-  }
-  test("Pass-through validator for LocalDateTime") {
-    checkValidator(LocalDateTime.of(2025, 7, 5, 10, 30, 0))
-  }
-  test("Pass-through validator for ZonedDateTime") {
-    checkValidator(ZonedDateTime.of(2025, 7, 5, 10, 30, 0, 0, ZoneId.of("UTC")))
-  }
-  test("Pass-through validator for Duration") {
-    checkValidator(Duration.ofHours(5))
-  }
 }

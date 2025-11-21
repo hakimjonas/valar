@@ -347,9 +347,10 @@ class ValidationSpec extends FunSuite {
 }
 
 /** Extension methods for ValidationResult to support test assertions. */
-private implicit class ValidationResultTestOps[A](vr: ValidationResult[A]) {
-  def isInvalid: Boolean = vr match {
-    case _: ValidationResult.Invalid => true
+private[valar] implicit class ValidationResultTestOps[A](vr: ValidationResult[A]) {
+  def isValid: Boolean = vr match {
+    case _: ValidationResult.Valid[?] => true
     case _ => false
   }
+  def isInvalid: Boolean = !isValid
 }
