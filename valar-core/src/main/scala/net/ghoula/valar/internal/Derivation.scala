@@ -7,6 +7,21 @@ import scala.quoted.{Expr, Quotes, Type}
 import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.{AsyncValidator, ValidationResult, Validator}
 
+/** Represents a missing validator discovered during compile-time validation.
+  *
+  * @param fieldName
+  *   The name of the field missing a validator.
+  * @param fieldType
+  *   A human-readable representation of the field's type.
+  * @param suggestion
+  *   A helpful suggestion for how to fix the issue.
+  */
+private[internal] case class MissingValidator(
+  fieldName: String,
+  fieldType: String,
+  suggestion: String
+)
+
 /** Internal derivation engine for automatically generating validator instances.
   *
   * This object provides the core macro infrastructure for deriving both synchronous and
@@ -79,56 +94,11 @@ object Derivation {
     }
   }
 
-  /** Applies validation logic to each field of a product type with null-safety handling.
-    *
-    * This method iterates through the fields of a product type, applying the appropriate validation
-    * logic to each field. It handles null values appropriately based on whether the field is
-    * optional, and provides consistent error handling for both synchronous and asynchronous
-    * validation scenarios.
-    *
-    * @param product
-    *   The product instance whose fields are being validated.
-    * @param validators
-    *   The sequence of validators corresponding to each field.
-    * @param labels
-    *   The field names for error reporting.
-    * @param isOptionFlags
-    *   Flags indicating which fields are optional (Option types).
-    * @param validateAndAnnotate
-    *   Function to apply validation and annotation to a field.
-    * @param handleNull
-    *   Function to handle null values in non-optional fields.
-    * @tparam V
-    *   The validator type (either `Validator` or `AsyncValidator`).
-    * @tparam R
-    *   The result type (either `ValidationResult` or `Future[ValidationResult]`).
-    * @return
-    *   A list of validation results for each field.
-    */
-  private def validateProduct[V, R](
-    product: Product,
-    validators: Seq[V],
-    labels: List[String],
-    isOptionFlags: List[Boolean],
-    validateAndAnnotate: (V, Any, String) => R,
-    handleNull: String => R
-  ): List[R] = {
-    product.productIterator.zipWithIndex.map { case (fieldValue, i) =>
-      val label = labels(i)
-      if (Option(fieldValue).isEmpty && !isOptionFlags(i)) {
-        handleNull(label)
-      } else {
-        val validator = validators(i)
-        validateAndAnnotate(validator, fieldValue, label)
-      }
-    }.toList
-  }
-
   /** Extracts field names from a compile-time tuple of string literal types.
     *
-    * This method recursively processes a tuple type containing string literals (typically from
-    * `Mirror.MirroredElemLabels`) to extract the actual field names as a runtime `List[String]`. It
-    * performs compile-time validation to ensure all labels are string literals.
+    * Uses Scala 3.7.4's type-level pattern matching to extract string literals from the
+    * `Mirror.MirroredElemLabels` tuple type. Each element is a singleton string type that gets
+    * extracted to a runtime value.
     *
     * @param q
     *   The quotes context for macro operations.
@@ -141,55 +111,106 @@ object Derivation {
     */
   private def getLabels[Labels <: Tuple: Type](using q: Quotes): List[String] = {
     import q.reflect.*
-    def loop(tpe: TypeRepr): List[String] = tpe.dealias match {
-      case AppliedType(_, List(head, tail)) =>
-        head match {
-          case ConstantType(StringConstant(label)) => label :: loop(tail)
-          case _ =>
-            report.errorAndAbort(
-              s"Invalid field label type: expected string literal, found ${head.show}. " +
-                "This typically indicates a structural issue with the case class definition.",
-              Position.ofMacroExpansion
-            )
+
+    // Type-level extraction using pattern matching on quoted types
+    // More idiomatic Scala 3 approach than manual TypeRepr traversal
+    def extract[L <: Tuple: Type]: List[String] = Type.of[L] match {
+      case '[EmptyTuple] => Nil
+      case '[label *: rest] =>
+        // Extract the singleton string type's value using constValue pattern
+        Type.of[label] match {
+          case '[l] =>
+            TypeRepr.of[l] match {
+              case ConstantType(StringConstant(s)) => s :: extract[rest]
+              case other =>
+                report.errorAndAbort(
+                  s"Invalid field label type: expected string literal, found ${other.show}. " +
+                    "This typically indicates a structural issue with the case class definition.",
+                  Position.ofMacroExpansion
+                )
+            }
         }
-      case t if t =:= TypeRepr.of[EmptyTuple] => Nil
-      case _ =>
-        report.errorAndAbort(
-          s"Invalid label tuple structure: ${tpe.show}. " +
-            "This may indicate an incompatible case class or tuple definition.",
-          Position.ofMacroExpansion
-        )
     }
-    loop(TypeRepr.of[Labels])
+
+    extract[Labels]
   }
 
-  /** Analyzes field types to identify which fields are optional (`Option[T]`).
+  /** Validates that all required validators are available at compile time.
     *
-    * This method examines each field type in a product type to determine if it's an `Option` type.
-    * This information is used during validation to handle null values appropriately - null values
-    * are acceptable for optional fields but trigger validation errors for required fields.
+    * This method performs upfront validation of all field types before code generation, collecting
+    * ALL missing validators rather than failing on the first one. This provides better developer
+    * experience by showing all issues at once.
     *
     * @param q
     *   The quotes context for macro operations.
+    * @tparam T
+    *   The product type being validated.
     * @tparam Elems
     *   The tuple type containing all field types.
-    * @return
-    *   A list of boolean flags indicating which fields are optional.
+    * @param labels
+    *   The list of field names.
+    * @param isAsync
+    *   Whether this is for async validation (affects error message).
     */
-  private def getIsOptionFlags[Elems <: Tuple: Type](using q: Quotes): List[Boolean] = {
+  private def validateAllFieldsHaveValidators[T: Type, Elems <: Tuple: Type](
+    labels: List[String],
+    isAsync: Boolean
+  )(using q: Quotes): Unit = {
     import q.reflect.*
-    Type.of[Elems] match {
-      case '[EmptyTuple] => Nil
-      case '[h *: t] =>
-        (TypeRepr.of[h] <:< TypeRepr.of[Option[Any]]) :: getIsOptionFlags[t]
+
+    def collectMissing[E <: Tuple: Type](
+      remainingLabels: List[String],
+      acc: List[MissingValidator]
+    ): List[MissingValidator] =
+      Type.of[E] match {
+        case '[EmptyTuple] => acc.reverse
+        case '[h *: t] =>
+          val label = remainingLabels.head
+          val fieldTypeStr = Type.show[h]
+
+          // For async, we accept either AsyncValidator or Validator
+          val hasValidator = if (isAsync) {
+            Expr.summon[AsyncValidator[h]].isDefined || Expr.summon[Validator[h]].isDefined
+          } else {
+            Expr.summon[Validator[h]].isDefined
+          }
+
+          val newAcc = if (hasValidator) acc
+          else {
+            val suggestion = if (isAsync) {
+              s"given Validator[$fieldTypeStr] = ... or given AsyncValidator[$fieldTypeStr] = ..."
+            } else {
+              s"given Validator[$fieldTypeStr] = ..."
+            }
+            MissingValidator(label, fieldTypeStr, suggestion) :: acc
+          }
+
+          collectMissing[t](remainingLabels.tail, newAcc)
+      }
+
+    val missing = collectMissing[Elems](labels, Nil)
+
+    if (missing.nonEmpty) {
+      val validatorType = if (isAsync) "AsyncValidator" else "Validator"
+      val header = s"Cannot derive $validatorType for ${Type.show[T]}: missing validators for ${missing.length} field(s).\n"
+
+      val details = missing.zipWithIndex.map { case (m, i) =>
+        s"  ${i + 1}. Field '${m.fieldName}' of type ${m.fieldType}\n" +
+          s"     Add: ${m.suggestion}"
+      }.mkString("\n\n")
+
+      val footer = "\n\nHint: Valar provides built-in validators for common types (Int, String, Option, etc.).\n" +
+        "For custom types, either derive them with `Validator.derived` or provide explicit instances."
+
+      report.errorAndAbort(header + "\n" + details + footer, Position.ofMacroExpansion)
     }
   }
 
   /** Generates a synchronous validator for product types using compile-time reflection.
     *
     * This method performs compile-time introspection of the product type, extracts field
-    * information, summons appropriate validators for each field, and generates optimized
-    * validation logic.
+    * information, summons appropriate validators for each field, and generates optimized validation
+    * logic.
     *
     * The generated validator handles:
     *   - Field-by-field validation using appropriate validator instances
@@ -217,55 +238,111 @@ object Derivation {
     import q.reflect.*
 
     val fieldLabels: List[String] = getLabels[Labels]
-    val isOptionList: List[Boolean] = getIsOptionFlags[Elems]
-    val fieldLabelsExpr: Expr[List[String]] = Expr(fieldLabels)
-    val isOptionListExpr: Expr[List[Boolean]] = Expr(isOptionList)
 
-    def summonValidators[E <: Tuple: Type]: List[Expr[Validator[Any]]] =
+    // Compile-time validation: check ALL fields have validators before generating code
+    // This provides better error messages by reporting all missing validators at once
+    validateAllFieldsHaveValidators[T, Elems](fieldLabels, isAsync = false)
+
+    // Type detection strategy:
+    // 1. Regular tuples (Tuple2, etc.): T <:< Tuple, use _1, _2 accessors - zero cast
+    // 2. Case classes: have actual field members, use field name accessor - zero cast
+    // 3. Named tuples: NOT <:< Tuple, no field members, use productElement - requires cast
+    //    (This matches Scala 3.7.4 stdlib pattern: NamedTuple.apply uses asInstanceOf)
+    val isRegularTuple = TypeRepr.of[T] <:< TypeRepr.of[Tuple]
+
+    // Generate validation expression for a single field
+    // Field access strategy depends on type:
+    // - Regular tuples: Select.unique(a, "_1") - zero cast
+    // - Case classes: Select.unique(a, "fieldName") - zero cast
+    // - Named tuples: productElement(index).asInstanceOf[H] - matches stdlib
+    def generateFieldValidation[H: Type](
+      aExpr: Expr[T],
+      label: String,
+      index: Int,
+      isOption: Boolean,
+      validatorExpr: Expr[Validator[H]]
+    ): Expr[ValidationResult[Any]] = {
+      val labelExpr = Expr(label)
+
+      // Determine field access method based on type structure
+      val fieldAccess: Expr[H] = if (isRegularTuple) {
+        // Regular tuple: use _1, _2, etc. - typed accessors, zero cast
+        Select.unique(aExpr.asTerm, s"_${index + 1}").asExprOf[H]
+      } else {
+        // Check if type has actual field member (case classes do, named tuples don't)
+        val typeSymbol = TypeRepr.of[T].typeSymbol
+        val hasFieldMember = typeSymbol.fieldMember(label) != Symbol.noSymbol
+
+        if (hasFieldMember) {
+          // Case class: direct field access - zero cast
+          Select.unique(aExpr.asTerm, label).asExprOf[H]
+        } else {
+          // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
+          // See: scala.NamedTuple.apply uses asInstanceOf for element access
+          val indexExpr = Expr(index)
+          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] }
+        }
+      }
+
+      if (isOption) {
+        // Option fields: null is valid (will be None), just validate
+        '{
+          val fieldValue: H = $fieldAccess
+          val result = $validatorExpr.validate(fieldValue)
+          annotateErrors(result, $labelExpr, fieldValue)
+        }
+      } else {
+        // Required fields: null triggers error
+        '{
+          val fieldValue: H = $fieldAccess
+          if (fieldValue == null) {
+            ValidationResult.invalid(
+              ValidationError(
+                s"Field '${$labelExpr}' must not be null.",
+                List($labelExpr),
+                expected = Some("non-null value"),
+                actual = Some("null")
+              )
+            )
+          } else {
+            val result = $validatorExpr.validate(fieldValue)
+            annotateErrors(result, $labelExpr, fieldValue)
+          }
+        }
+      }
+    }
+
+    // Generate all field validations at compile time
+    // Uses type-level IsOption[H] match type for compile-time Option detection
+    def generateAllValidations[E <: Tuple: Type](
+      aExpr: Expr[T],
+      index: Int,
+      labels: List[String]
+    ): List[Expr[ValidationResult[Any]]] =
       Type.of[E] match {
         case '[EmptyTuple] => Nil
         case '[h *: t] =>
-          val validatorExpr = Expr.summon[Validator[h]].getOrElse {
-            report.errorAndAbort(
-              s"Cannot derive Validator for ${Type.show[T]}: missing validator for field type ${Type.show[h]}. " +
-                "Please provide a given instance of Validator[${Type.show[h]}].",
-              Position.ofMacroExpansion
-            )
-          }
-          '{ MacroHelper.upcastTo[Validator[Any]](${ validatorExpr }) } :: summonValidators[t]
-      }
+          val label = labels.head
 
-    val fieldValidators: List[Expr[Validator[Any]]] = summonValidators[Elems]
-    val validatorsExpr: Expr[Seq[Validator[Any]]] = Expr.ofSeq(fieldValidators)
+          // Type-level Option detection using quotes reflection
+          // Checks if h <:< Option[?] at macro expansion time
+          val isOption: Boolean = TypeRepr.of[h] <:< TypeRepr.of[Option[?]]
+
+          // Safe to use .get - upfront validation guarantees validators exist
+          val validatorExpr = Expr.summon[Validator[h]].get
+
+          val fieldValidation = generateFieldValidation[h](aExpr, label, index, isOption, validatorExpr)
+          fieldValidation :: generateAllValidations[t](aExpr, index + 1, labels.tail)
+      }
 
     '{
       new Validator[T] {
         def validate(a: T): ValidationResult[T] = {
-          a match {
-            case product: Product =>
-              val validators = ${ validatorsExpr }
-              val labels = ${ fieldLabelsExpr }
-              val isOptionFlags = ${ isOptionListExpr }
-
-              val results = validateProduct(
-                product,
-                validators,
-                labels,
-                isOptionFlags,
-                validateAndAnnotate = (v, fv, l) => annotateErrors(v.validate(fv), l, fv),
-                handleNull = l =>
-                  ValidationResult.invalid(
-                    ValidationError(
-                      s"Field '$l' must not be null.",
-                      List(l),
-                      expected = Some("non-null value"),
-                      actual = Some("null")
-                    )
-                  )
-              )
-
-              processResults(results, ${ m })
+          val results: List[ValidationResult[Any]] = ${
+            val aExpr = 'a
+            Expr.ofList(generateAllValidations[Elems](aExpr, 0, fieldLabels))
           }
+          processResults(results, $m)
         }
       }
     }
@@ -274,8 +351,8 @@ object Derivation {
   /** Generates an asynchronous validator for product types using compile-time reflection.
     *
     * This method performs compile-time introspection of the product type, extracts field
-    * information, summons appropriate validators for each field, and generates optimized
-    * async validation logic.
+    * information, summons appropriate validators for each field, and generates optimized async
+    * validation logic.
     *
     * The generated validator handles:
     *   - Field-by-field validation using appropriate validator instances
@@ -305,72 +382,127 @@ object Derivation {
     import q.reflect.*
 
     val fieldLabels: List[String] = getLabels[Labels]
-    val isOptionList: List[Boolean] = getIsOptionFlags[Elems]
-    val fieldLabelsExpr: Expr[List[String]] = Expr(fieldLabels)
-    val isOptionListExpr: Expr[List[Boolean]] = Expr(isOptionList)
 
-    def summonAsyncOrSync[E <: Tuple: Type]: List[Expr[AsyncValidator[Any]]] =
+    // Compile-time validation: check ALL fields have validators before generating code
+    validateAllFieldsHaveValidators[T, Elems](fieldLabels, isAsync = true)
+
+    // Type detection strategy (same as sync version):
+    // 1. Regular tuples: T <:< Tuple, use _1, _2 accessors - zero cast
+    // 2. Case classes: have actual field members, use field name accessor - zero cast
+    // 3. Named tuples: NOT <:< Tuple, no field members, use productElement - requires cast
+    val isRegularTuple = TypeRepr.of[T] <:< TypeRepr.of[Tuple]
+
+    // Generate async validation expression for a single field
+    // Field access strategy depends on type structure
+    def generateAsyncFieldValidation[H: Type](
+      aExpr: Expr[T],
+      label: String,
+      index: Int,
+      isOption: Boolean,
+      asyncValidatorExpr: Expr[AsyncValidator[H]]
+    ): Expr[ExecutionContext => Future[ValidationResult[Any]]] = {
+      val labelExpr = Expr(label)
+
+      // Determine field access method based on type structure
+      val fieldAccess: Expr[H] = if (isRegularTuple) {
+        // Regular tuple: use _1, _2, etc. - typed accessors, zero cast
+        Select.unique(aExpr.asTerm, s"_${index + 1}").asExprOf[H]
+      } else {
+        // Check if type has actual field member (case classes do, named tuples don't)
+        val typeSymbol = TypeRepr.of[T].typeSymbol
+        val hasFieldMember = typeSymbol.fieldMember(label) != Symbol.noSymbol
+
+        if (hasFieldMember) {
+          // Case class: direct field access - zero cast
+          Select.unique(aExpr.asTerm, label).asExprOf[H]
+        } else {
+          // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
+          val indexExpr = Expr(index)
+          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] }
+        }
+      }
+
+      if (isOption) {
+        // Option fields: null is valid (will be None), just validate
+        '{ (ec: ExecutionContext) =>
+          given ExecutionContext = ec
+          val fieldValue: H = $fieldAccess
+          $asyncValidatorExpr.validateAsync(fieldValue)
+            .map(result => annotateErrors(result, $labelExpr, fieldValue))
+            .recover { case scala.util.control.NonFatal(ex) =>
+              ValidationResult.invalid(
+                ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
+              )
+            }
+        }
+      } else {
+        // Required fields: null triggers error
+        '{ (ec: ExecutionContext) =>
+          given ExecutionContext = ec
+          val fieldValue: H = $fieldAccess
+          if (fieldValue == null) {
+            Future.successful(
+              ValidationResult.invalid(
+                ValidationError(
+                  s"Field '${$labelExpr}' must not be null.",
+                  List($labelExpr),
+                  expected = Some("non-null value"),
+                  actual = Some("null")
+                )
+              )
+            )
+          } else {
+            $asyncValidatorExpr.validateAsync(fieldValue)
+              .map(result => annotateErrors(result, $labelExpr, fieldValue))
+              .recover { case scala.util.control.NonFatal(ex) =>
+                ValidationResult.invalid(
+                  ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
+                )
+              }
+          }
+        }
+      }
+    }
+
+    // Generate all async field validations at compile time
+    // Uses type-level IsOption[H] match type for compile-time Option detection
+    def generateAllAsyncValidations[E <: Tuple: Type](
+      aExpr: Expr[T],
+      index: Int,
+      labels: List[String]
+    ): List[Expr[ExecutionContext => Future[ValidationResult[Any]]]] =
       Type.of[E] match {
         case '[EmptyTuple] => Nil
         case '[h *: t] =>
-          val validatorExpr = Expr.summon[AsyncValidator[h]].orElse(Expr.summon[Validator[h]]).getOrElse {
-            report.errorAndAbort(
-              s"Cannot derive AsyncValidator for ${Type.show[T]}: missing validator for field type ${Type.show[h]}. " +
-                "Please provide a given instance of either Validator[${Type.show[h]}] or AsyncValidator[${Type.show[h]}].",
-              Position.ofMacroExpansion
-            )
+          val label = labels.head
+
+          // Type-level Option detection using quotes reflection
+          // Checks if h <:< Option[?] at macro expansion time
+          val isOption: Boolean = TypeRepr.of[h] <:< TypeRepr.of[Option[?]]
+
+          // Safe to use .get - upfront validation guarantees validators exist
+          // Try AsyncValidator first, fall back to Validator
+          val validatorExpr = Expr.summon[AsyncValidator[h]].orElse(Expr.summon[Validator[h]]).get
+
+          // Convert sync validator to async if needed (compile-time type witness, no runtime cast)
+          val asyncValidatorExpr: Expr[AsyncValidator[h]] = validatorExpr.asTerm.tpe.asType match {
+            case '[AsyncValidator[`h`]] => validatorExpr.asExprOf[AsyncValidator[h]]
+            case '[Validator[`h`]] => '{ AsyncValidator.fromSync(${ validatorExpr.asExprOf[Validator[h]] }) }
           }
 
-          val finalExpr = validatorExpr.asTerm.tpe.asType match {
-            case '[AsyncValidator[h]] => validatorExpr
-            case '[Validator[h]] => '{ AsyncValidator.fromSync(${ validatorExpr.asExprOf[Validator[h]] }) }
-          }
-
-          '{ MacroHelper.upcastTo[AsyncValidator[Any]](${ finalExpr }) } :: summonAsyncOrSync[t]
+          val fieldValidation = generateAsyncFieldValidation[h](aExpr, label, index, isOption, asyncValidatorExpr)
+          fieldValidation :: generateAllAsyncValidations[t](aExpr, index + 1, labels.tail)
       }
-
-    val fieldValidators: List[Expr[AsyncValidator[Any]]] = summonAsyncOrSync[Elems]
-    val validatorsExpr: Expr[Seq[AsyncValidator[Any]]] = Expr.ofSeq(fieldValidators)
 
     '{
       new AsyncValidator[T] {
         def validateAsync(a: T)(using ec: ExecutionContext): Future[ValidationResult[T]] = {
-          a match {
-            case product: Product =>
-              val validators = ${ validatorsExpr }
-              val labels = ${ fieldLabelsExpr }
-              val isOptionFlags = ${ isOptionListExpr }
-
-              val fieldResultsF = validateProduct(
-                product,
-                validators,
-                labels,
-                isOptionFlags,
-                validateAndAnnotate = (v, fv, l) => v.validateAsync(fv).map(annotateErrors(_, l, fv)),
-                handleNull = l =>
-                  Future.successful(
-                    ValidationResult.invalid(
-                      ValidationError(
-                        s"Field '$l' must not be null.",
-                        List(l),
-                        expected = Some("non-null value"),
-                        actual = Some("null")
-                      )
-                    )
-                  )
-              )
-
-              val allResultsF: Future[List[ValidationResult[Any]]] =
-                Future.sequence(fieldResultsF.map { f =>
-                  f.recover { case scala.util.control.NonFatal(ex) =>
-                    ValidationResult.invalid(
-                      ValidationError(s"Asynchronous validation failed unexpectedly: ${ex.getMessage}")
-                    )
-                  }
-                })
-
-              allResultsF.map(processResults(_, ${ m }))
+          val validations: List[ExecutionContext => Future[ValidationResult[Any]]] = ${
+            val aExpr = 'a
+            Expr.ofList(generateAllAsyncValidations[Elems](aExpr, 0, fieldLabels))
           }
+          val futureResults = validations.map(_(ec))
+          Future.sequence(futureResults).map(processResults(_, $m))
         }
       }
     }
