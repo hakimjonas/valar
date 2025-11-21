@@ -57,3 +57,6 @@ build/
 ### JVM crash logs ###
 hs_err_pid*.log
 core.*
+
+### Claude Code ###
+.claude/

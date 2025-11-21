@@ -2,6 +2,8 @@ package net.ghoula.valar
 
 import munit.FunSuite
 
+import java.util.concurrent.atomic.AtomicInteger
+
 /** Tests ValidationConfig collection size limits.
   */
 class ValidationConfigSpec extends FunSuite {
@@ -46,10 +48,10 @@ class ValidationConfigSpec extends FunSuite {
   }
 
   test("size check should fail fast before validating elements") {
-    var elementsValidated = 0
+    val elementsValidated = new AtomicInteger(0)
     given Validator[String] with {
       def validate(s: String): ValidationResult[String] = {
-        elementsValidated += 1
+        elementsValidated.incrementAndGet()
         ValidationResult.Valid(s)
       }
     }
@@ -59,6 +61,6 @@ class ValidationConfigSpec extends FunSuite {
     val validator = summon[Validator[List[String]]]
     validator.validate(oversized)
 
-    assertEquals(elementsValidated, 0, "Should not validate any elements when size limit exceeded")
+    assertEquals(elementsValidated.get(), 0, "Should not validate any elements when size limit exceeded")
   }
 }
