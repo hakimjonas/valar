@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
-metaprogramming (macros) to help you define complex validation rules with less boilerplate, while providing structured,
+inline metaprogramming to help you define complex validation rules with less boilerplate, while providing structured,
 detailed error messages useful for debugging or user feedback.
 
 ## **✨ What's New in 0.5.X**
@@ -16,8 +16,7 @@ detailed error messages useful for debugging or user feedback.
   `Translator` typeclass.
 * **🧪 Enhanced ValarSuite**: Updated testing utilities in `valar-munit` now used in `valar-translator` for more robust
   validation testing.
-* **⚡ Reworked Macros**: Simpler, more performant, and more modern macro implementations for better compile-time
-  validation.
+* **⚡ Reworked Derivation**: Simpler, more performant inline metaprogramming for better compile-time validation.
 * **🛡️ MiMa Checks**: Added binary compatibility verification to ensure smooth upgrades between versions.
 * **📚 Improved Documentation**: Comprehensive updates to scaladoc and module-level README files for a better developer
   experience.
@@ -26,7 +25,7 @@ detailed error messages useful for debugging or user feedback.
 
 * **Type Safety:** Clearly distinguish between valid results and accumulated errors at compile time using
   ValidationResult[A]. Eliminate runtime errors caused by unexpected validation states.
-* **Minimal Boilerplate:** Derive Validator instances automatically for case classes using compile-time macros,
+* **Minimal Boilerplate:** Derive Validator instances automatically for case classes using compile-time derivation,
   significantly reducing repetitive validation logic. Focus on your rules, not the wiring.
 * **Flexible Error Handling:** Choose the strategy that fits your use case:
     * **Error Accumulation** (default): Collect all validation failures, ideal for reporting multiple issues (e.g., in
@@ -37,7 +36,7 @@ detailed error messages useful for debugging or user feedback.
 * **Named Tuple Support:** Field-aware error messages for Scala 3.7's named tuples, with preserved backward
   compatibility.
 * **Scala 3 Idiomatic:** Built specifically for Scala 3, embracing features like extension methods, given instances,
-  opaque types, and macros for a modern, expressive API.
+  opaque types, and inline metaprogramming for a modern, expressive API.
 
 ## **Extensibility Pattern**
 
@@ -404,7 +403,7 @@ Version 0.5.0 introduces several new features while maintaining backward compati
 1. **New ValidationObserver trait** for observing validation outcomes
 2. **New valar-translator module** for internationalization support
 3. **Enhanced ValarSuite** with improved testing utilities
-4. **Reworked macros** for better performance and modern Scala 3 features
+4. **Reworked inline metaprogramming** for better performance and modern Scala 3 features
 5. **MiMa checks** to ensure binary compatibility
 
 To upgrade to v0.5.0, update your build.sbt:
@@ -493,7 +492,7 @@ When a collection exceeds the configured limit, validation fails immediately '''
 
 ## **Compatibility**
 
-* **Scala:** 3.7+
+* **Scala:** 3.7.4+
 * **Platforms:** JVM, Scala Native
 * **Dependencies:** valar-core has a Compile dependency on `io.github.cquiroz:scala-java-time` to provide robust,
   cross-platform support for the `java.time` API.
