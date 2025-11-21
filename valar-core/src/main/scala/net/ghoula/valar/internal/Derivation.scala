@@ -280,7 +280,7 @@ object Derivation {
           // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
           // See: scala.NamedTuple.apply uses asInstanceOf for element access
           val indexExpr = Expr(index)
-          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] }
+          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] } // scalafix:ok DisableSyntax.asInstanceOf
         }
       }
 
@@ -295,7 +295,7 @@ object Derivation {
         // Required fields: null triggers error
         '{
           val fieldValue: H = $fieldAccess
-          if (fieldValue == null) {
+          if (fieldValue == null) { // scalafix:ok DisableSyntax.null
             ValidationResult.invalid(
               ValidationError(
                 s"Field '${$labelExpr}' must not be null.",
@@ -418,7 +418,7 @@ object Derivation {
         } else {
           // Named tuple: use productElement (matches Scala 3.7.4 stdlib pattern)
           val indexExpr = Expr(index)
-          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] }
+          '{ $aExpr.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[H] } // scalafix:ok DisableSyntax.asInstanceOf
         }
       }
 
@@ -440,7 +440,7 @@ object Derivation {
         '{ (ec: ExecutionContext) =>
           given ExecutionContext = ec
           val fieldValue: H = $fieldAccess
-          if (fieldValue == null) {
+          if (fieldValue == null) { // scalafix:ok DisableSyntax.null
             Future.successful(
               ValidationResult.invalid(
                 ValidationError(
