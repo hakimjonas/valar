@@ -4,7 +4,6 @@ import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, ZonedD
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
 import scala.deriving.Mirror
-import scala.language.reflectiveCalls
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
