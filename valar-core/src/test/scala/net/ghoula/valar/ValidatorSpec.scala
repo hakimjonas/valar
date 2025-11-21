@@ -2,7 +2,8 @@ package net.ghoula.valar
 
 import munit.FunSuite
 
-/** Tests the built-in validators that enforce constraints (non-negative Int, non-empty String, etc).
+/** Tests the built-in validators that enforce constraints (non-negative Int, non-empty String,
+  * etc).
   */
 class ValidatorSpec extends FunSuite {
 
