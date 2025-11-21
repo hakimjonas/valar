@@ -20,6 +20,6 @@ object MacroHelper {
     *   The value `x` cast to type `T`.
     */
   @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-  inline def upcastTo[T](x: Any): T = x.asInstanceOf[T]
+  transparent inline def upcastTo[T](x: Any): T = x.asInstanceOf[T]
 
 }

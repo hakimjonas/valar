@@ -294,7 +294,6 @@ object Validator {
   /** Macro implementation for deriving a `Validator`. */
   private def deriveImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
-  )(using q: Quotes): Expr[Validator[T]] = {
-    Derivation.deriveValidatorImpl[T, Elems, Labels](m, isAsync = false).asExprOf[Validator[T]]
-  }
+  )(using q: Quotes): Expr[Validator[T]] =
+    Derivation.deriveSyncValidatorImpl[T, Elems, Labels](m)
 }

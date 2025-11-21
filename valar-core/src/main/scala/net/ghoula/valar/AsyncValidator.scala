@@ -454,7 +454,6 @@ object AsyncValidator {
     */
   private def deriveImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
-  )(using q: Quotes): Expr[AsyncValidator[T]] = {
-    Derivation.deriveValidatorImpl[T, Elems, Labels](m, isAsync = true).asExprOf[AsyncValidator[T]]
-  }
+  )(using q: Quotes): Expr[AsyncValidator[T]] =
+    Derivation.deriveAsyncValidatorImpl[T, Elems, Labels](m)
 }
