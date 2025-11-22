@@ -12,7 +12,7 @@ introduces the ValarSuite trait that extends MUnit's FunSuite with specialized a
 Add the valar-munit dependency to your build.sbt:
 
 ```scala
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.6.0" % Test
 ```
 
 ## Usage

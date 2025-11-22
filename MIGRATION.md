@@ -49,30 +49,35 @@ given Validator[Double] with {
 }
 ```
 
-## Migrating from v0.4.8 to v0.5.0
+## Migrating from v0.4.8 to v0.6.0
 
-Version 0.5.0 introduces several new features while maintaining backward compatibility with v0.4.8:
+If upgrading directly from v0.4.8, you'll get all features from v0.5.0 plus the v0.6.0 changes:
 
-1. **New ValidationObserver trait** for observing validation outcomes without altering the flow
-2. **New valar-translator module** for internationalization support of validation error messages
+**New in v0.5.0:**
+1. **ValidationObserver trait** for observing validation outcomes without altering the flow
+2. **valar-translator module** for internationalization support of validation error messages
 3. **Enhanced ValarSuite** with improved testing utilities
 4. **Reworked derivation** using modern Scala 3 inline metaprogramming
 5. **MiMa checks** to ensure binary compatibility between versions
+
+**New in v0.6.0:**
+- **Breaking**: Built-in validators are now pass-through (see v0.5.0 to v0.6.0 migration above)
+- Internal DRY refactoring for better maintainability
 
 ### Update build.sbt:
 
 ```scala
 // Update core library
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.6.0"
 
 // Add the optional translator module (if needed)
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.6.0"
 
 // Update testing utilities (if used)
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.6.0" % Test
 ```
 
-Your existing validation code will continue to work without any changes.
+If you relied on the constrained defaults for Int/String/Float/Double, see the v0.5.0 to v0.6.0 migration section above.
 
 ### Using the New Features
 

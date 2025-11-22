@@ -69,8 +69,8 @@ lazy val valarCore = crossProject(JVMPlatform, NativePlatform)
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
     // --- MiMa & TASTy-MiMa Configuration ---
-    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
-    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.6.0 release
+    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.6.0 release
     mimaFailOnNoPrevious := false, // Prevents MiMa from failing when no previous artifacts are set
     // --- Library Dependencies ---
     libraryDependencies ++= Seq(
@@ -105,8 +105,8 @@ lazy val valarMunit = crossProject(JVMPlatform, NativePlatform)
     name := "valar-munit",
     usePgpKeyHex("9614A0CE1CE76975"),
     useGpgAgent := true,
-    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
-    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.5.0 release
+    mimaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.6.0 release
+    tastyMiMaPreviousArtifacts := Set.empty, // Will start enforcing binary compatibility after the 0.6.0 release
     mimaFailOnNoPrevious := false, // Prevents MiMa from failing when no previous artifacts are set
     libraryDependencies += "org.scalameta" %%% "munit" % "1.1.1"
   )

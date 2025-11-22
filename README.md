@@ -135,13 +135,13 @@ Add the following to your build.sbt:
 
 ```scala
 // The core validation library (JVM & Scala Native)
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
+libraryDependencies += "net.ghoula" %%% "valar-core" % "0.6.0"
 
 // Optional: For internationalization (i18n) support
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.6.0"
 
 // Optional: For enhanced testing with MUnit
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
+libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.6.0" % Test
 ```
 
 ## Basic Usage Example
@@ -397,45 +397,11 @@ The `valar-translator` module is designed to:
 * Compose cleanly with other Valar features like ValidationObserver
 * Provide a clear separation between validation logic and presentation concerns
 
-## Migration Guide from v0.4.8 to v0.5.0
+## Migration Guide
 
-Version 0.5.0 introduces several new features while maintaining backward compatibility with v0.4.8:
+For detailed migration instructions, see [MIGRATION.md](https://github.com/hakimjonas/valar/blob/main/MIGRATION.md).
 
-1. **New ValidationObserver trait** for observing validation outcomes
-2. **New valar-translator module** for internationalization support
-3. **Enhanced ValarSuite** with improved testing utilities
-4. **Reworked derivation** using modern Scala 3 inline metaprogramming
-5. **MiMa checks** to ensure binary compatibility
-
-To upgrade to v0.5.0, update your build.sbt:
-
-```scala
-// Update core library
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.5.0"
-
-// Add the optional translator module (if needed)
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
-
-// Update testing utilities (if used)
-libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.5.0" % Test
-```
-
-Your existing validation code will continue to work without any changes.
-
-## Migration Guide from v0.3.0 to v0.4.8
-
-The main breaking change in v0.4.0 was the **artifact name change** from valar to valar-core to support the modular
-architecture.
-
-1. **Update build.sbt**:
-
-```scala
-// Replace this:
-libraryDependencies += "net.ghoula" %% "valar" % "0.3.0"
-
-// With this (note the triple %%% for cross-platform support):
-libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
-```
+**Latest: v0.6.0** - Breaking change: built-in validators are now pass-through. See the migration guide for details.
 
 ## Security Considerations
 

@@ -11,7 +11,7 @@ The `valar-translator` module provides internationalization (i18n) support for V
 Add the valar-translator dependency to your build.sbt:
 
 ```scala
-libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.5.0"
+libraryDependencies += "net.ghoula" %%% "valar-translator" % "0.6.0"
 ```
 
 ## Usage
