@@ -7,6 +7,14 @@
 Valar is a validation library for Scala 3. It uses Scala 3's type system and inline metaprogramming to define validation
 rules with minimal boilerplate, providing structured error messages for debugging or user feedback.
 
+## What's New in 0.6.0
+
+* **Breaking Change**: Built-in validators for `Int`, `String`, `Float`, `Double` are now pass-through (accept all
+  values). Constraints are opt-in via `ValidationHelpers`. See [MIGRATION.md](MIGRATION.md) for upgrade instructions.
+* **Internal DRY Refactoring**: Eliminated code duplication between `Validator` and `AsyncValidator` with an internal
+  `F[_]` abstraction for better maintainability.
+* **Scala 3.7.4**: Upgraded to latest Scala with modern inline metaprogramming.
+
 ## What's New in 0.5.X
 
 * **ValidationObserver**: A trait for observing validation outcomes without altering the flow. Useful for logging,
@@ -16,7 +24,6 @@ rules with minimal boilerplate, providing structured error messages for debuggin
 * **Enhanced ValarSuite**: Updated testing utilities in `valar-munit`.
 * **Reworked Derivation**: Uses modern Scala 3 inline metaprogramming for compile-time validation.
 * **MiMa Checks**: Binary compatibility verification between versions.
-* **Improved Documentation**: Updated scaladoc and module-level README files.
 
 ## Key Features
 
@@ -146,8 +153,8 @@ libraryDependencies += "net.ghoula" %%% "valar-munit" % "0.6.0" % Test
 
 ## Basic Usage Example
 
-Here's a basic example of validating a case class. Valar provides default validators for String (non-empty) and Int (
-non-negative).
+Here's a basic example of validating a case class with custom constraints. Built-in validators are pass-through by
+default, so you define the constraints you need.
 
 ```scala
 import net.ghoula.valar.*
