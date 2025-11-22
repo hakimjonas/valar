@@ -11,19 +11,8 @@ rules with minimal boilerplate, providing structured error messages for debuggin
 
 * **Breaking Change**: Built-in validators for `Int`, `String`, `Float`, `Double` are now pass-through (accept all
   values). Constraints are opt-in via `ValidationHelpers`. See [MIGRATION.md](MIGRATION.md) for upgrade instructions.
-* **Internal DRY Refactoring**: Eliminated code duplication between `Validator` and `AsyncValidator` with an internal
-  `F[_]` abstraction for better maintainability.
+* **Internal DRY Refactoring**: Eliminated code duplication between `Validator` and `AsyncValidator`.
 * **Scala 3.7.4**: Upgraded to latest Scala with modern inline metaprogramming.
-
-## What's New in 0.5.X
-
-* **ValidationObserver**: A trait for observing validation outcomes without altering the flow. Useful for logging,
-  metrics, or auditing. Zero overhead when not used.
-* **valar-translator Module**: Internationalization (i18n) support for validation error messages via the `Translator`
-  typeclass.
-* **Enhanced ValarSuite**: Updated testing utilities in `valar-munit`.
-* **Reworked Derivation**: Uses modern Scala 3 inline metaprogramming for compile-time validation.
-* **MiMa Checks**: Binary compatibility verification between versions.
 
 ## Key Features
 
