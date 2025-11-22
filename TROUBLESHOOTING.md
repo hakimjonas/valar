@@ -185,6 +185,35 @@ val result = Validator[List[Data]].validate(userList)
 
 ---
 
+### Issue: NullPointerException during validation (Java interop / Spark)
+
+**Problem:** Validating objects with null fields throws NPE instead of returning Invalid.
+
+**Cause:** Valar is designed for idiomatic Scala 3 code where nulls are discouraged. By default, derived validators pass field values directly to the field's validator without null checks.
+
+**Solution:** Define null-aware validators for types that may contain null:
+
+```scala
+// For Java interop or Spark DataFrames
+given Validator[String] with {
+  def validate(s: String) =
+    if (s == null) ValidationResult.invalid(ValidationError("Value is null"))
+    else if (s.isEmpty) ValidationResult.invalid(ValidationError("Value is empty"))
+    else ValidationResult.Valid(s)
+}
+
+// Now derivation will handle nulls gracefully
+case class JavaUser(name: String, email: String)
+given Validator[JavaUser] = Validator.derive
+```
+
+This approach:
+- Keeps the core library simple and fast for pure Scala code
+- Lets users opt-in to null handling where needed
+- Allows custom null handling behavior (fail vs. treat as empty, etc.)
+
+---
+
 ## Performance Problems
 
 ### Issue: Validation of large collections is slow
@@ -476,3 +505,4 @@ def validateUser(user: User): ValidationResult[User] = for {
 | Stack overflow | Limit nesting depth or use iterative validation |
 | ReDoS vulnerability | Never accept user regex patterns |
 | Sensitive data in errors | Use `valar-translator` to sanitize messages |
+| NPE with null fields (Java/Spark) | Define null-aware validators for affected types |

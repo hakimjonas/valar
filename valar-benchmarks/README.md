@@ -129,7 +129,7 @@ To add new benchmarks:
 
 ## Dependencies
 - JMH 1.37
-- Scala 3.7.1
+- Scala 3.7.4
 - OpenJDK 21+
 
 ## Notes

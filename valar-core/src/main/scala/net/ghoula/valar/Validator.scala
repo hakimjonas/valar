@@ -4,14 +4,12 @@ import java.time.{Duration, Instant, LocalDate, LocalDateTime, LocalTime, ZonedD
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
 import scala.deriving.Mirror
-import scala.language.reflectiveCalls
 import scala.quoted.{Expr, Quotes, Type}
 import scala.reflect.ClassTag
 
-import net.ghoula.valar.ValidationErrors.ValidationError
 import net.ghoula.valar.ValidationHelpers.*
 import net.ghoula.valar.ValidationResult.{validateUnion, given}
-import net.ghoula.valar.internal.Derivation
+import net.ghoula.valar.internal.{Derivation, SyncEffect, ValidationLogic}
 
 /** A typeclass for defining custom validation logic for type `A`.
   *
@@ -41,28 +39,24 @@ object Validator {
 
   // ... keep all the existing given instances exactly as they are ...
 
-  /** Validates that an Int is non-negative (>= 0). Uses [[ValidationHelpers.nonNegativeInt]]. */
-  given nonNegativeIntValidator: Validator[Int] with {
-    def validate(i: Int): ValidationResult[Int] = nonNegativeInt(i)
+  /** Pass-through validator for Int. For constraints, use [[ValidationHelpers.nonNegativeInt]]. */
+  inline given intValidator: Validator[Int] with {
+    def validate(i: Int): ValidationResult[Int] = ValidationResult.Valid(i)
   }
 
-  /** Validates that a Float is finite (not NaN or infinite). Uses
-    * [[ValidationHelpers.finiteFloat]].
-    */
-  given finiteFloatValidator: Validator[Float] with {
-    def validate(f: Float): ValidationResult[Float] = finiteFloat(f)
+  /** Pass-through validator for Float. For constraints, use [[ValidationHelpers.finiteFloat]]. */
+  inline given floatValidator: Validator[Float] with {
+    def validate(f: Float): ValidationResult[Float] = ValidationResult.Valid(f)
   }
 
-  /** Validates that a Double is finite (not NaN or infinite). Uses
-    * [[ValidationHelpers.finiteDouble]].
-    */
-  given finiteDoubleValidator: Validator[Double] with {
-    def validate(d: Double): ValidationResult[Double] = finiteDouble(d)
+  /** Pass-through validator for Double. For constraints, use [[ValidationHelpers.finiteDouble]]. */
+  inline given doubleValidator: Validator[Double] with {
+    def validate(d: Double): ValidationResult[Double] = ValidationResult.Valid(d)
   }
 
-  /** Validates that a String is non-empty. Uses [[ValidationHelpers.nonEmpty]]. */
-  given nonEmptyStringValidator: Validator[String] with {
-    def validate(s: String): ValidationResult[String] = nonEmpty(s)
+  /** Pass-through validator for String. For constraints, use [[ValidationHelpers.nonEmpty]]. */
+  inline given stringValidator: Validator[String] with {
+    def validate(s: String): ValidationResult[String] = ValidationResult.Valid(s)
   }
 
   /** Default validator for `Option[A]`. */
@@ -71,154 +65,61 @@ object Validator {
       optional(opt)(using v)
   }
 
-  /** Validates a `List[A]` by validating each element.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the collection size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates a `List[A]` by validating each element. */
   given listValidator[A](using v: Validator[A], config: ValidationConfig): Validator[List[A]] with {
-    def validate(xs: List[A]): ValidationResult[List[A]] = {
-      config.checkCollectionSize(xs.size, "List").flatMap { _ =>
-        val results = xs.map(v.validate)
-        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], List.empty[A])) {
-          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
-        }
-        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
-      }
-    }
+    def validate(xs: List[A]): ValidationResult[List[A]] =
+      ValidationLogic.validateCollection[[X] =>> X, A, List[A]](xs, identity, "List")(v.validate)(using
+        SyncEffect,
+        config
+      )
   }
 
-  /** Validates a `Seq[A]` by validating each element.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the collection size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates a `Seq[A]` by validating each element. */
   given seqValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Seq[A]] with {
-    def validate(xs: Seq[A]): ValidationResult[Seq[A]] = {
-      config.checkCollectionSize(xs.size, "Seq").flatMap { _ =>
-        val results = xs.map(v.validate)
-        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Seq.empty[A])) {
-          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
-        }
-        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
-      }
-    }
+    def validate(xs: Seq[A]): ValidationResult[Seq[A]] =
+      ValidationLogic.validateCollection[[X] =>> X, A, Seq[A]](xs, _.toSeq, "Seq")(v.validate)(using SyncEffect, config)
   }
 
-  /** Validates a `Vector[A]` by validating each element.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the collection size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates a `Vector[A]` by validating each element. */
   given vectorValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Vector[A]] with {
-    def validate(xs: Vector[A]): ValidationResult[Vector[A]] = {
-      config.checkCollectionSize(xs.size, "Vector").flatMap { _ =>
-        val results = xs.map(v.validate)
-        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Vector.empty[A])) {
-          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals :+ a)
-          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
-        }
-        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
-      }
-    }
+    def validate(xs: Vector[A]): ValidationResult[Vector[A]] =
+      ValidationLogic.validateCollection[[X] =>> X, A, Vector[A]](xs, _.toVector, "Vector")(v.validate)(using
+        SyncEffect,
+        config
+      )
   }
 
-  /** Validates a `Set[A]` by validating each element.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the collection size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates a `Set[A]` by validating each element. */
   given setValidator[A](using v: Validator[A], config: ValidationConfig): Validator[Set[A]] with {
-    def validate(xs: Set[A]): ValidationResult[Set[A]] = {
-      config.checkCollectionSize(xs.size, "Set").flatMap { _ =>
-        val results = xs.map(v.validate)
-        val (errors, validValues) = results.foldLeft((Vector.empty[ValidationError], Set.empty[A])) {
-          case ((errs, vals), ValidationResult.Valid(a)) => (errs, vals + a)
-          case ((errs, vals), ValidationResult.Invalid(e2)) => (errs ++ e2, vals)
-        }
-        if errors.isEmpty then ValidationResult.Valid(validValues) else ValidationResult.Invalid(errors)
-      }
-    }
+    def validate(xs: Set[A]): ValidationResult[Set[A]] =
+      ValidationLogic.validateCollection[[X] =>> X, A, Set[A]](xs, _.toSet, "Set")(v.validate)(using SyncEffect, config)
   }
 
-  /** Validates a `Map[K, V]` by validating each key and value.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the map size before processing entries, failing fast if the limit is exceeded.
-    */
+  /** Validates a `Map[K, V]` by validating each key and value. */
   given mapValidator[K, V](using vk: Validator[K], vv: Validator[V], config: ValidationConfig): Validator[Map[K, V]]
   with {
-    def validate(m: Map[K, V]): ValidationResult[Map[K, V]] = {
-      config.checkCollectionSize(m.size, "Map").flatMap { _ =>
-        val results = m.map { case (k, v) =>
-          val validatedKey: ValidationResult[K] = vk.validate(k) match {
-            case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
-            case ValidationResult.Invalid(es) =>
-              ValidationResult.Invalid(
-                es.map(e => e.annotateField("key", k.getClass.getSimpleName))
-              )
-          }
-          val validatedValue: ValidationResult[V] = vv.validate(v) match {
-            case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
-            case ValidationResult.Invalid(es) =>
-              ValidationResult.Invalid(
-                es.map(e => e.annotateField("value", v.getClass.getSimpleName))
-              )
-          }
-          validatedKey.zip(validatedValue)
-        }
-        val (errors, validPairs) = results.foldLeft((Vector.empty[ValidationError], Map.empty[K, V])) {
-          case ((errs, acc), ValidationResult.Valid(pair)) => (errs, acc + pair)
-          case ((errs, acc), ValidationResult.Invalid(e2)) => (errs ++ e2, acc)
-        }
-        if errors.isEmpty then ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
-      }
-    }
+    def validate(m: Map[K, V]): ValidationResult[Map[K, V]] =
+      ValidationLogic.validateMap[[X] =>> X, K, V](m)(vk.validate, vv.validate)(using SyncEffect, config)
   }
 
-  /** Helper for validating iterable collections. */
-  private def validateIterable[A, C[_]](
-    xs: Iterable[A],
-    builder: Vector[A] => C[A]
-  )(using v: Validator[A]): ValidationResult[C[A]] = {
-    val resultsIterator = xs.iterator.map(v.validate)
-    val initial = (Vector.empty[ValidationError], Vector.empty[A])
-    val (errors, validValues) = resultsIterator.foldLeft(initial) {
-      case ((currentErrors, currentValidValues), result) =>
-        result match {
-          case ValidationResult.Valid(a) => (currentErrors, currentValidValues :+ a)
-          case ValidationResult.Invalid(e2) => (currentErrors ++ e2, currentValidValues)
-        }
-    }
-    if (errors.isEmpty) ValidationResult.Valid(builder(validValues))
-    else ValidationResult.Invalid(errors)
-  }
-
-  /** Validates an `Array[A]`.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the array size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates an `Array[A]` by validating each element. */
   given arrayValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[Array[A]] with {
     def validate(xs: Array[A]): ValidationResult[Array[A]] =
-      config.checkCollectionSize(xs.length, "Array").flatMap { _ =>
-        validateIterable(xs, (validValues: Vector[A]) => validValues.toArray)
-      }
+      ValidationLogic.validateCollection[[X] =>> X, A, Array[A]](xs, _.toArray, "Array")(v.validate)(using
+        SyncEffect,
+        config
+      )
   }
 
-  /** Validates an `ArraySeq[A]`.
-    *
-    * If a [[ValidationConfig]] is in scope with `maxCollectionSize` set, this validator will check
-    * the collection size before processing elements, failing fast if the limit is exceeded.
-    */
+  /** Validates an `ArraySeq[A]` by validating each element. */
   given arraySeqValidator[A](using v: Validator[A], ct: ClassTag[A], config: ValidationConfig): Validator[ArraySeq[A]]
   with {
     def validate(xs: ArraySeq[A]): ValidationResult[ArraySeq[A]] =
-      config.checkCollectionSize(xs.size, "ArraySeq").flatMap { _ =>
-        validateIterable(xs, (validValues: Vector[A]) => ArraySeq.unsafeWrapArray(validValues.toArray))
-      }
+      ValidationLogic.validateCollection[[X] =>> X, A, ArraySeq[A]](
+        xs,
+        l => ArraySeq.unsafeWrapArray(l.toArray),
+        "ArraySeq"
+      )(v.validate)(using SyncEffect, config)
   }
 
   /** Validates an intersection type `A & B`. */
@@ -294,7 +195,6 @@ object Validator {
   /** Macro implementation for deriving a `Validator`. */
   private def deriveImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
-  )(using q: Quotes): Expr[Validator[T]] = {
-    Derivation.deriveValidatorImpl[T, Elems, Labels](m, isAsync = false).asExprOf[Validator[T]]
-  }
+  )(using q: Quotes): Expr[Validator[T]] =
+    Derivation.deriveSyncValidatorImpl[T, Elems, Labels](m)
 }

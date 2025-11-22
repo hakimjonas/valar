@@ -58,9 +58,6 @@ class ValidationSpec extends FunSuite {
   private case class Company(name: String, address: Address, ceo: Option[User])
   private given Validator[Company] = derive
 
-  private case class NullFieldTest(name: String, age: Int)
-  private given Validator[NullFieldTest] = derive
-
   /** Tests for collection type validators. */
 
   test("Collection Validators - listValidator") {
@@ -310,10 +307,6 @@ class ValidationSpec extends FunSuite {
     }
   }
 
-  test("Macro Derivation - non-optional null field") {
-    assert(summon[Validator[NullFieldTest]].validate(NullFieldTest(Option.empty[String].orNull, 30)).isInvalid)
-  }
-
   /** Tests for fail-fast validation operations. */
 
   test("Fail-Fast - zipFailFast") {
@@ -354,9 +347,10 @@ class ValidationSpec extends FunSuite {
 }
 
 /** Extension methods for ValidationResult to support test assertions. */
-private implicit class ValidationResultTestOps[A](vr: ValidationResult[A]) {
-  def isInvalid: Boolean = vr match {
-    case _: ValidationResult.Invalid => true
+private[valar] implicit class ValidationResultTestOps[A](vr: ValidationResult[A]) {
+  def isValid: Boolean = vr match {
+    case _: ValidationResult.Valid[?] => true
     case _ => false
   }
+  def isInvalid: Boolean = !isValid
 }

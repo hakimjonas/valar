@@ -6,8 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.deriving.Mirror
 import scala.quoted.{Expr, Quotes, Type}
 
-import net.ghoula.valar.ValidationErrors.ValidationError
-import net.ghoula.valar.internal.Derivation
+import net.ghoula.valar.internal.{Derivation, FutureEffect, ValidationLogic}
 
 /** A typeclass for defining custom asynchronous validation logic for type `A`.
   *
@@ -51,76 +50,6 @@ object AsyncValidator {
       Future.successful(v.validate(a))
   }
 
-  /** Generic helper method for folding validation results into errors and valid values.
-    *
-    * @param results
-    *   the sequence of validation results to fold
-    * @param emptyAcc
-    *   the empty accumulator for valid values
-    * @param addToAcc
-    *   function to add a valid value to the accumulator
-    * @return
-    *   a tuple containing accumulated errors and valid values
-    */
-  private def foldValidationResults[A, B](
-    results: Iterable[ValidationResult[A]],
-    emptyAcc: B,
-    addToAcc: (B, A) => B
-  ): (Vector[ValidationError], B) = {
-    results.foldLeft((Vector.empty[ValidationError], emptyAcc)) {
-      case ((errs, acc), ValidationResult.Valid(value)) => (errs, addToAcc(acc, value))
-      case ((errs, acc), ValidationResult.Invalid(e)) => (errs ++ e, acc)
-    }
-  }
-
-  /** Generic helper method for validating collections asynchronously.
-    *
-    * This method eliminates code duplication by providing a common validation pattern for different
-    * collection types. It validates each element in the collection asynchronously and accumulates
-    * both errors and valid results.
-    *
-    * '''Security Note:''' This method enforces size limits from `ValidationConfig` before
-    * processing elements to prevent memory exhaustion attacks from maliciously large collections.
-    *
-    * @param items
-    *   the collection of items to validate
-    * @param validator
-    *   the validator for individual items
-    * @param buildResult
-    *   function to construct the final collection from valid items
-    * @param collectionType
-    *   description of the collection type for error messages
-    * @param config
-    *   validation configuration for security limits
-    * @param ec
-    *   execution context for async operations
-    * @return
-    *   a Future containing the validation result
-    */
-  private def validateCollection[A, C[_]](
-    items: Iterable[A],
-    validator: AsyncValidator[A],
-    buildResult: Iterable[A] => C[A],
-    collectionType: String
-  )(using config: ValidationConfig, ec: ExecutionContext): Future[ValidationResult[C[A]]] = {
-    config.checkCollectionSize(items.size, collectionType) match {
-      case ValidationResult.Invalid(errors) => Future.successful(ValidationResult.Invalid(errors))
-      case ValidationResult.Valid(_) =>
-        val futureResults = items.map { item =>
-          validator.validateAsync(item).map {
-            case ValidationResult.Valid(a) => ValidationResult.Valid(a)
-            case ValidationResult.Invalid(errors) => ValidationResult.Invalid(errors)
-          }
-        }
-
-        Future.sequence(futureResults).map { results =>
-          val (errors, validValues) = foldValidationResults(results, Vector.empty[A], _ :+ _)
-          if (errors.isEmpty) ValidationResult.Valid(buildResult(validValues))
-          else ValidationResult.Invalid(errors)
-        }
-    }
-  }
-
   /** Asynchronous validator for optional values.
     *
     * Validates an `Option[A]` by delegating to the underlying validator only when the value is
@@ -143,177 +72,51 @@ object AsyncValidator {
       }
   }
 
-  /** Asynchronous validator for lists.
-    *
-    * Validates a `List[A]` by applying the element validator to each item in the list
-    * asynchronously. All validation futures are executed concurrently, and their results are
-    * collected. Errors from individual elements are accumulated while preserving the order of valid
-    * elements.
-    *
-    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
-    * prevent DoS attacks via extremely large lists.
-    *
-    * @param v
-    *   the validator for list elements
-    * @param config
-    *   validation configuration for security limits
-    * @return
-    *   an AsyncValidator that handles lists
-    */
+  /** Asynchronous validator for lists. */
   given listAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[List[A]] with {
     def validateAsync(xs: List[A])(using ec: ExecutionContext): Future[ValidationResult[List[A]]] =
-      validateCollection(xs, v, _.toList, "List")
+      ValidationLogic.validateCollection(xs, identity, "List")(v.validateAsync)(using FutureEffect(), config)
   }
 
-  /** Asynchronous validator for sequences.
-    *
-    * Validates a `Seq[A]` by applying the element validator to each item in the sequence
-    * asynchronously. All validation futures are executed concurrently, and their results are
-    * collected. Errors from individual elements are accumulated while preserving the order of valid
-    * elements.
-    *
-    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
-    * prevent DoS attacks via extremely large sequences.
-    *
-    * @param v
-    *   the validator for sequence elements
-    * @param config
-    *   validation configuration for security limits
-    * @return
-    *   an AsyncValidator that handles sequences
-    */
+  /** Asynchronous validator for sequences. */
   given seqAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Seq[A]] with {
     def validateAsync(xs: Seq[A])(using ec: ExecutionContext): Future[ValidationResult[Seq[A]]] =
-      validateCollection(xs, v, _.toSeq, "Seq")
+      ValidationLogic.validateCollection(xs, _.toSeq, "Seq")(v.validateAsync)(using FutureEffect(), config)
   }
 
-  /** Asynchronous validator for vectors.
-    *
-    * Validates a `Vector[A]` by applying the element validator to each item in the vector
-    * asynchronously. All validation futures are executed concurrently, and their results are
-    * collected. Errors from individual elements are accumulated while preserving the order of valid
-    * elements.
-    *
-    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
-    * prevent DoS attacks via extremely large vectors.
-    *
-    * @param v
-    *   the validator for vector elements
-    * @param config
-    *   validation configuration for security limits
-    * @return
-    *   an AsyncValidator that handles vectors
-    */
+  /** Asynchronous validator for vectors. */
   given vectorAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Vector[A]] with {
     def validateAsync(xs: Vector[A])(using ec: ExecutionContext): Future[ValidationResult[Vector[A]]] =
-      validateCollection(xs, v, _.toVector, "Vector")
+      ValidationLogic.validateCollection(xs, _.toVector, "Vector")(v.validateAsync)(using FutureEffect(), config)
   }
 
-  /** Asynchronous validator for sets.
-    *
-    * Validates a `Set[A]` by applying the element validator to each item in the set asynchronously.
-    * All validation futures are executed concurrently, and their results are collected. Errors from
-    * individual elements are accumulated while preserving the valid elements in the resulting set.
-    *
-    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
-    * prevent DoS attacks via extremely large sets.
-    *
-    * @param v
-    *   the validator for set elements
-    * @param config
-    *   validation configuration for security limits
-    * @return
-    *   an AsyncValidator that handles sets
-    */
+  /** Asynchronous validator for sets. */
   given setAsyncValidator[A](using v: AsyncValidator[A], config: ValidationConfig): AsyncValidator[Set[A]] with {
     def validateAsync(xs: Set[A])(using ec: ExecutionContext): Future[ValidationResult[Set[A]]] =
-      validateCollection(xs, v, _.toSet, "Set")
+      ValidationLogic.validateCollection(xs, _.toSet, "Set")(v.validateAsync)(using FutureEffect(), config)
   }
 
-  /** Asynchronous validator for maps.
-    *
-    * Validates a `Map[K, V]` by applying the key validator to each key and the value validator to
-    * each value asynchronously. All validation futures are executed concurrently, and their results
-    * are collected. Errors from individual keys and values are accumulated with proper field path
-    * annotation, while valid key-value pairs are preserved in the resulting map.
-    *
-    * '''Security Note:''' This validator enforces collection size limits from `ValidationConfig` to
-    * prevent DoS attacks via extremely large maps.
-    *
-    * @param vk
-    *   the validator for map keys
-    * @param vv
-    *   the validator for map values
-    * @param config
-    *   validation configuration for security limits
-    * @return
-    *   an AsyncValidator that handles maps
-    */
+  /** Asynchronous validator for maps. */
   given mapAsyncValidator[K, V](using
     vk: AsyncValidator[K],
     vv: AsyncValidator[V],
     config: ValidationConfig
   ): AsyncValidator[Map[K, V]] with {
-    def validateAsync(m: Map[K, V])(using ec: ExecutionContext): Future[ValidationResult[Map[K, V]]] = {
-      config.checkCollectionSize(m.size, "Map") match {
-        case ValidationResult.Invalid(errors) => Future.successful(ValidationResult.Invalid(errors))
-        case ValidationResult.Valid(_) =>
-          val futureResults = m.map { case (k, v) =>
-            val futureKey = vk.validateAsync(k).map {
-              case ValidationResult.Valid(kk) => ValidationResult.Valid(kk)
-              case ValidationResult.Invalid(es) =>
-                ValidationResult.Invalid(es.map(_.annotateField("key", k.getClass.getSimpleName)))
-            }
-            val futureValue = vv.validateAsync(v).map {
-              case ValidationResult.Valid(vv) => ValidationResult.Valid(vv)
-              case ValidationResult.Invalid(es) =>
-                ValidationResult.Invalid(es.map(_.annotateField("value", v.getClass.getSimpleName)))
-            }
-
-            for {
-              keyResult <- futureKey
-              valueResult <- futureValue
-            } yield keyResult.zip(valueResult)
-          }
-
-          Future.sequence(futureResults).map { results =>
-            val (errors, validPairs) = foldValidationResults(results, Map.empty[K, V], _ + _)
-            if (errors.isEmpty) ValidationResult.Valid(validPairs) else ValidationResult.Invalid(errors)
-          }
-      }
-    }
+    def validateAsync(m: Map[K, V])(using ec: ExecutionContext): Future[ValidationResult[Map[K, V]]] =
+      ValidationLogic.validateMap(m)(vk.validateAsync, vv.validateAsync)(using FutureEffect(), config)
   }
 
-  /** Asynchronous validator for non-negative integers.
-    *
-    * Validates that an integer value is non-negative (>= 0). This validator is lifted from the
-    * corresponding synchronous validator and is used as a fallback when no custom integer validator
-    * is provided.
-    */
-  given nonNegativeIntAsyncValidator: AsyncValidator[Int] = fromSync(Validator.nonNegativeIntValidator)
+  /** Pass-through async validator for Int. For constraints, define a custom AsyncValidator. */
+  given intAsyncValidator: AsyncValidator[Int] = fromSync(Validator.intValidator)
 
-  /** Asynchronous validator for finite floating-point numbers.
-    *
-    * Validates that a float value is finite (not NaN or infinite). This validator is lifted from
-    * the corresponding synchronous validator and is used as a fallback when no custom float
-    * validator is provided.
-    */
-  given finiteFloatAsyncValidator: AsyncValidator[Float] = fromSync(Validator.finiteFloatValidator)
+  /** Pass-through async validator for Float. For constraints, define a custom AsyncValidator. */
+  given floatAsyncValidator: AsyncValidator[Float] = fromSync(Validator.floatValidator)
 
-  /** Asynchronous validator for finite double-precision numbers.
-    *
-    * Validates that a double value is finite (not NaN or infinite). This validator is lifted from
-    * the corresponding synchronous validator and is used as a fallback when no custom double
-    * validator is provided.
-    */
-  given finiteDoubleAsyncValidator: AsyncValidator[Double] = fromSync(Validator.finiteDoubleValidator)
+  /** Pass-through async validator for Double. For constraints, define a custom AsyncValidator. */
+  given doubleAsyncValidator: AsyncValidator[Double] = fromSync(Validator.doubleValidator)
 
-  /** Asynchronous validator for non-empty strings.
-    *
-    * Validates that a string value is not empty. This validator is lifted from the corresponding
-    * synchronous validator and is used as a fallback when no custom string validator is provided.
-    */
-  given nonEmptyStringAsyncValidator: AsyncValidator[String] = fromSync(Validator.nonEmptyStringValidator)
+  /** Pass-through async validator for String. For constraints, define a custom AsyncValidator. */
+  given stringAsyncValidator: AsyncValidator[String] = fromSync(Validator.stringValidator)
 
   /** Asynchronous validator for boolean values.
     *
@@ -454,7 +257,6 @@ object AsyncValidator {
     */
   private def deriveImpl[T: Type, Elems <: Tuple: Type, Labels <: Tuple: Type](
     m: Expr[Mirror.ProductOf[T]]
-  )(using q: Quotes): Expr[AsyncValidator[T]] = {
-    Derivation.deriveValidatorImpl[T, Elems, Labels](m, isAsync = true).asExprOf[AsyncValidator[T]]
-  }
+  )(using q: Quotes): Expr[AsyncValidator[T]] =
+    Derivation.deriveAsyncValidatorImpl[T, Elems, Labels](m)
 }

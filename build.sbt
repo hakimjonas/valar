@@ -9,7 +9,7 @@ import _root_.mdoc.MdocPlugin
 // ===== Build‑wide Settings =====
 ThisBuild / organization := "net.ghoula"
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / scalaVersion := "3.7.1"
+ThisBuild / scalaVersion := "3.7.4"
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
