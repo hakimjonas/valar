@@ -1,35 +1,41 @@
-# **Valar – Type-Safe Validation for Scala 3**
+# Valar - Type-Safe Validation for Scala 3
 
 [![Maven Central](https://img.shields.io/maven-central/v/net.ghoula/valar-core_3?label=maven-central&style=flat-square)](https://central.sonatype.com/artifact/net.ghoula/valar-core_3)
 [![Scala CI and GitHub Release](https://github.com/hakimjonas/valar/actions/workflows/scala.yml/badge.svg)](https://github.com/hakimjonas/valar/actions/workflows/scala.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-Valar is a validation library for Scala 3 designed for clarity and ease of use. It leverages Scala 3's type system and
-inline metaprogramming to help you define complex validation rules with less boilerplate, while providing structured,
-detailed error messages useful for debugging or user feedback.
+Valar is a validation library for Scala 3. It uses Scala 3's type system and inline metaprogramming to define validation
+rules with minimal boilerplate, providing structured error messages for debugging or user feedback.
 
 ## What's New in 0.5.X
 
-* **ValidationObserver**: A trait for observing validation outcomes without altering the flow. Useful for logging, metrics, or auditing. Zero overhead when not used.
-* **valar-translator**: Internationalization support for validation error messages via the `Translator` typeclass.
-* **Enhanced ValarSuite**: Improved testing utilities in `valar-munit`.
-* **Reworked Derivation**: Cleaner inline metaprogramming for compile-time validation.
+* **ValidationObserver**: A trait for observing validation outcomes without altering the flow. Useful for logging,
+  metrics, or auditing. Zero overhead when not used.
+* **valar-translator Module**: Internationalization (i18n) support for validation error messages via the `Translator`
+  typeclass.
+* **Enhanced ValarSuite**: Updated testing utilities in `valar-munit`.
+* **Reworked Derivation**: Uses modern Scala 3 inline metaprogramming for compile-time validation.
 * **MiMa Checks**: Binary compatibility verification between versions.
+* **Improved Documentation**: Updated scaladoc and module-level README files.
 
 ## Key Features
 
-* **Type-safe results**: `ValidationResult[A]` distinguishes valid results from accumulated errors at compile time.
-* **Automatic derivation**: Derive `Validator` instances for case classes at compile time, reducing boilerplate.
-* **Flexible error handling**:
-    * *Error accumulation* (default): Collect all validation failures for comprehensive reporting.
-    * *Fail-fast*: Stop on first failure for performance-sensitive paths.
-* **Detailed error reports**: `ValidationError` includes field paths, expected vs. actual values, optional codes, and severity.
-* **Named tuple support**: Field-aware error messages for Scala 3.7's named tuples.
-* **Scala 3 native**: Built for Scala 3 using extension methods, given instances, opaque types, and inline metaprogramming.
+* **Type Safety:** Distinguish between valid results and accumulated errors at compile time using `ValidationResult[A]`.
+* **Minimal Boilerplate:** Derive `Validator` instances automatically for case classes using compile-time derivation.
+* **Flexible Error Handling:**
+    * **Error Accumulation** (default): Collect all validation failures for reporting multiple issues.
+    * **Fail-Fast**: Stop on the first failure for performance-sensitive pipelines.
+* **Detailed Error Reports:** `ValidationError` objects with field paths, expected vs. actual values, and optional
+  codes/severity.
+* **Named Tuple Support:** Field-aware error messages for Scala 3.7's named tuples.
+* **Scala 3 Idiomatic:** Uses extension methods, given instances, opaque types, and inline metaprogramming.
 
-## Extensibility
+## Extensibility Pattern
 
-Valar is extensible through the `ValidationObserver` pattern, which allows integrating with external systems without modifying core validation logic.
+Valar is extensible through the `ValidationObserver` pattern, which integrates with external systems without modifying
+core validation logic.
+
+### The ValidationObserver Pattern
 
 ```scala
 trait ValidationObserver {
@@ -38,13 +44,23 @@ trait ValidationObserver {
 ```
 
 Properties:
-* Zero overhead when using the default no-op observer (compiler eliminates the code)
-* Non-intrusive: observes results without altering validation flow
-* Composable with other Valar features
 
-Common uses: logging, metrics collection, auditing.
+* **Zero Overhead**: Default no-op observer is eliminated by the compiler
+* **Non-Intrusive**: Observes results without altering the validation flow
+* **Composable**: Works with other Valar features and can be chained
 
-Planned extensions: `valar-cats-effect`, `valar-zio`.
+### Extension Examples
+
+Current uses:
+
+- **Logging**: Log validation outcomes
+- **Metrics**: Collect validation statistics
+- **Auditing**: Track validation events
+
+Planned:
+
+- **valar-cats-effect**: Async validation with IO-based observers
+- **valar-zio**: ZIO-based validation with resource management
 
 ## Available Artifacts
 
@@ -98,19 +114,20 @@ Valar provides artifacts for both JVM and Scala Native platforms:
 
 ### Benchmark Results
 
-Detailed JMH benchmarks are available in the [valar-benchmarks module](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md).
+Detailed benchmarks available in the [valar-benchmarks module](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md).
 
-Summary:
+Key findings:
 - Simple validations: ~10-50 nanoseconds
 - Case class derivation: Zero runtime overhead (compile-time only)
 - Collection validation: Linear with collection size
+- `ValidationObserver` with no-op has no runtime impact
 
 ## Additional Resources
 
-- [Performance Benchmarks](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md) - JMH benchmark results
-- [Testing Guide](https://github.com/hakimjonas/valar/blob/main/valar-munit/README.md) - ValarSuite testing utilities
-- [Internationalization](https://github.com/hakimjonas/valar/blob/main/valar-translator/README.md) - i18n support
-- [Troubleshooting](https://github.com/hakimjonas/valar/blob/main/TROUBLESHOOTING.md) - Common issues and solutions
+- [Performance Benchmarks](https://github.com/hakimjonas/valar/blob/main/valar-benchmarks/README.md): JMH benchmark results
+- [Testing Guide](https://github.com/hakimjonas/valar/blob/main/valar-munit/README.md): ValarSuite testing utilities
+- [Internationalization](https://github.com/hakimjonas/valar/blob/main/valar-translator/README.md): i18n support
+- [Troubleshooting Guide](https://github.com/hakimjonas/valar/blob/main/TROUBLESHOOTING.md): Common issues and solutions
 
 ## Installation
 
@@ -269,14 +286,15 @@ includes:
 Most built-in validators for scalar types (excluding those with obvious constraints like Int, String, Float, Double) are
 **pass-through** validators. You should define custom validators if you need specific constraints for these types.
 
-## ValidationObserver
+## ValidationObserver Pattern
 
-The `ValidationObserver` trait provides a way to extend Valar with custom functionality:
+The `ValidationObserver` trait is more than just a logging mechanism—it's the **foundational pattern** for extending
+Valar with custom functionality. This pattern allows you to:
 
-- Integrate with external systems (logging, metrics, monitoring)
-- Add side effects without modifying validation logic
-- Build composable extensions
-- Zero overhead when not used
+- **Integrate with external systems** (logging, metrics, monitoring)
+- **Add side effects** without modifying validation logic
+- **Build composable extensions** that work together seamlessly
+- **Maintain zero overhead** when extensions aren't needed
 
 ```scala
 import net.ghoula.valar.*
@@ -318,9 +336,16 @@ val result = Validator[User].validate(user)
   .map(processUser)
 ```
 
+Key features of ValidationObserver:
+
+* **Zero Overhead**: When using the default no-op observer, the compiler eliminates all observer-related code
+* **Non-Intrusive**: Observes validation results without altering the validation flow
+* **Chainable**: Works seamlessly with other operations in the validation pipeline
+* **Flexible**: Can be used for logging, metrics, alerting, or any other side effect
+
 ## Internationalization with valar-translator
 
-The `valar-translator` module provides internationalization support for validation error messages:
+The `valar-translator` module provides internationalization (i18n) support for validation error messages:
 
 ```scala
 import net.ghoula.valar.*
@@ -365,7 +390,7 @@ Version 0.5.0 introduces several new features while maintaining backward compati
 1. **New ValidationObserver trait** for observing validation outcomes
 2. **New valar-translator module** for internationalization support
 3. **Enhanced ValarSuite** with improved testing utilities
-4. **Reworked inline metaprogramming** for better performance and modern Scala 3 features
+4. **Reworked derivation** using modern Scala 3 inline metaprogramming
 5. **MiMa checks** to ensure binary compatibility
 
 To upgrade to v0.5.0, update your build.sbt:
@@ -400,22 +425,22 @@ libraryDependencies += "net.ghoula" %%% "valar-core" % "0.4.8-bundle"
 
 ## Security Considerations
 
-When using Valar with untrusted user input, be aware of the following:
+When using Valar with untrusted user input, please be aware of the following security considerations:
 
 ### Regular Expression Denial of Service (ReDoS)
 
-The `regexMatch` methods that accept `String` patterns are vulnerable to ReDoS attacks when used with untrusted input.
+**Warning:** The `regexMatch` methods that accept `String` patterns are vulnerable to ReDoS attacks when used with untrusted input.
 
 **Safe Practice:**
 ```scala
-// ✅ SAFE - Use pre-compiled regex patterns
+// SAFE - Use pre-compiled regex patterns
 val emailPattern = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$".r
 regexMatch(userInput, emailPattern)(_ => "Invalid email")
 ```
 
 **Unsafe Practice:**
 ```scala
-// ❌ UNSAFE - Never pass user-provided patterns!
+// UNSAFE - Never pass user-provided patterns!
 val userPattern = request.getParameter("pattern")
 regexMatch(value, userPattern)(_ => "Invalid")  // ReDoS vulnerability!
 ```
@@ -454,7 +479,7 @@ When a collection exceeds the configured limit, validation fails immediately '''
 
 ## Compatibility
 
-* **Scala:** 3.7.4+
+* **Scala:** 3.7+
 * **Platforms:** JVM, Scala Native
 * **Dependencies:** valar-core has a Compile dependency on `io.github.cquiroz:scala-java-time` to provide robust,
   cross-platform support for the `java.time` API.
