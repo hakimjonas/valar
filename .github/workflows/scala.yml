@@ -114,7 +114,8 @@ jobs:
         # - Publishing artifacts (JAR, sources, javadoc, POM, signatures)
         # - Staging the release on Sonatype
         # - Closing and releasing the staging repository on Sonatype
-        # - Creating a GitHub Release for the tag
+        # Note: continue-on-error allows workflow to pass if version already exists on Maven Central
+        continue-on-error: true
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }} # Passphrase for GPG key
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # Sonatype username/token
