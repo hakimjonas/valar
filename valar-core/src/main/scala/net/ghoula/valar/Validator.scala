@@ -40,28 +40,24 @@ object Validator {
 
   // ... keep all the existing given instances exactly as they are ...
 
-  /** Validates that an Int is non-negative (>= 0). Uses [[ValidationHelpers.nonNegativeInt]]. */
-  given nonNegativeIntValidator: Validator[Int] with {
-    def validate(i: Int): ValidationResult[Int] = nonNegativeInt(i)
+  /** Pass-through validator for Int. For constraints, use [[ValidationHelpers.nonNegativeInt]]. */
+  inline given intValidator: Validator[Int] with {
+    def validate(i: Int): ValidationResult[Int] = ValidationResult.Valid(i)
   }
 
-  /** Validates that a Float is finite (not NaN or infinite). Uses
-    * [[ValidationHelpers.finiteFloat]].
-    */
-  given finiteFloatValidator: Validator[Float] with {
-    def validate(f: Float): ValidationResult[Float] = finiteFloat(f)
+  /** Pass-through validator for Float. For constraints, use [[ValidationHelpers.finiteFloat]]. */
+  inline given floatValidator: Validator[Float] with {
+    def validate(f: Float): ValidationResult[Float] = ValidationResult.Valid(f)
   }
 
-  /** Validates that a Double is finite (not NaN or infinite). Uses
-    * [[ValidationHelpers.finiteDouble]].
-    */
-  given finiteDoubleValidator: Validator[Double] with {
-    def validate(d: Double): ValidationResult[Double] = finiteDouble(d)
+  /** Pass-through validator for Double. For constraints, use [[ValidationHelpers.finiteDouble]]. */
+  inline given doubleValidator: Validator[Double] with {
+    def validate(d: Double): ValidationResult[Double] = ValidationResult.Valid(d)
   }
 
-  /** Validates that a String is non-empty. Uses [[ValidationHelpers.nonEmpty]]. */
-  given nonEmptyStringValidator: Validator[String] with {
-    def validate(s: String): ValidationResult[String] = nonEmpty(s)
+  /** Pass-through validator for String. For constraints, use [[ValidationHelpers.nonEmpty]]. */
+  inline given stringValidator: Validator[String] with {
+    def validate(s: String): ValidationResult[String] = ValidationResult.Valid(s)
   }
 
   /** Default validator for `Option[A]`. */

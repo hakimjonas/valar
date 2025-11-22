@@ -270,21 +270,35 @@ Built-in Validators" section for types supported out-of-the-box.
 
 ## Built-in Validators
 
-Valar provides given Validator instances out-of-the-box for many common types to ease setup and support derivation. This
-includes:
+Valar provides pass-through `Validator` instances for common types to enable derivation. All built-in validators accept
+any value - constraints are opt-in via `ValidationHelpers`.
 
-* **Scala Primitives:** Int (non-negative), String (non-empty), Boolean, Long, Double (finite), Float (finite), Byte,
-  Short, Char, Unit.
-* **Other Scala Types:** BigInt, BigDecimal, Symbol.
-* **Common Java Types:** java.util.UUID, java.time.Instant, java.time.LocalDate, java.time.LocalDateTime,
-  java.time.ZonedDateTime, java.time.LocalTime, java.time.Duration.
-* **Standard Collections:** Option, List, Vector, Seq, Set, Array, ArraySeq, Map (provided validators exist for their
-  element/key/value types).
-* **Tuple Types:** Named tuples and regular tuples.
-* **Intersection (&) and Union (|) Types:** Provided corresponding validators for the constituent types exist.
+**Supported types:**
 
-Most built-in validators for scalar types (excluding those with obvious constraints like Int, String, Float, Double) are
-**pass-through** validators. You should define custom validators if you need specific constraints for these types.
+* **Scala Primitives:** Int, String, Boolean, Long, Double, Float, Byte, Short, Char, Unit
+* **Other Scala Types:** BigInt, BigDecimal, Symbol
+* **Java Types:** UUID, Instant, LocalDate, LocalDateTime, ZonedDateTime, LocalTime, Duration
+* **Collections:** Option, List, Vector, Seq, Set, Array, ArraySeq, Map
+* **Tuple Types:** Named tuples and regular tuples
+* **Composite Types:** Intersection (&) and Union (|) types
+
+**Opt-in constraints** (from `ValidationHelpers`):
+
+```scala
+import net.ghoula.valar.ValidationHelpers.*
+
+// Define constrained validators when you need them
+given Validator[Int] with {
+  def validate(i: Int) = nonNegativeInt(i)
+}
+
+given Validator[String] with {
+  def validate(s: String) = nonEmpty(s)
+}
+```
+
+Available constraint helpers: `nonNegativeInt`, `nonEmpty`, `finiteFloat`, `finiteDouble`, `minLength`, `maxLength`,
+`regexMatch`, `inRange`, `oneOf`.
 
 ## ValidationObserver Pattern
 

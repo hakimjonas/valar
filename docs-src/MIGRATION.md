@@ -1,5 +1,54 @@
 # Migration Guide
 
+## Migrating from v0.5.0 to v0.6.0
+
+Version 0.6.0 includes a **breaking change** to built-in validators.
+
+### Breaking Change: Pass-Through Validators
+
+Built-in validators for `Int`, `String`, `Float`, and `Double` are now **pass-through** (accept all values). Previously
+they enforced constraints:
+
+| Type   | v0.5.0 (constrained)         | v0.6.0 (pass-through) |
+|--------|------------------------------|-----------------------|
+| Int    | Rejects negative values      | Accepts all values    |
+| String | Rejects empty strings        | Accepts all values    |
+| Float  | Rejects NaN/Infinity         | Accepts all values    |
+| Double | Rejects NaN/Infinity         | Accepts all values    |
+
+**Why this change?** The opinionated defaults limited Valar's use as a general-purpose foundation. Users validating
+temperatures (negative values valid), legacy data (empty strings valid), or scientific data (NaN meaningful) had to
+fight the library's defaults.
+
+### Migration Steps
+
+If you relied on the constrained defaults, define explicit validators using `ValidationHelpers`:
+
+```scala
+import net.ghoula.valar.*
+import net.ghoula.valar.ValidationHelpers.*
+
+// Restore v0.5.0 behavior for Int
+given Validator[Int] with {
+  def validate(i: Int) = nonNegativeInt(i)
+}
+
+// Restore v0.5.0 behavior for String
+given Validator[String] with {
+  def validate(s: String) = nonEmpty(s)
+}
+
+// Restore v0.5.0 behavior for Float
+given Validator[Float] with {
+  def validate(f: Float) = finiteFloat(f)
+}
+
+// Restore v0.5.0 behavior for Double
+given Validator[Double] with {
+  def validate(d: Double) = finiteDouble(d)
+}
+```
+
 ## Migrating from v0.4.8 to v0.5.0
 
 Version 0.5.0 introduces several new features while maintaining backward compatibility with v0.4.8:

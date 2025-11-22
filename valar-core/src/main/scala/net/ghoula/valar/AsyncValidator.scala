@@ -284,36 +284,17 @@ object AsyncValidator {
     }
   }
 
-  /** Asynchronous validator for non-negative integers.
-    *
-    * Validates that an integer value is non-negative (>= 0). This validator is lifted from the
-    * corresponding synchronous validator and is used as a fallback when no custom integer validator
-    * is provided.
-    */
-  given nonNegativeIntAsyncValidator: AsyncValidator[Int] = fromSync(Validator.nonNegativeIntValidator)
+  /** Pass-through async validator for Int. For constraints, define a custom AsyncValidator. */
+  given intAsyncValidator: AsyncValidator[Int] = fromSync(Validator.intValidator)
 
-  /** Asynchronous validator for finite floating-point numbers.
-    *
-    * Validates that a float value is finite (not NaN or infinite). This validator is lifted from
-    * the corresponding synchronous validator and is used as a fallback when no custom float
-    * validator is provided.
-    */
-  given finiteFloatAsyncValidator: AsyncValidator[Float] = fromSync(Validator.finiteFloatValidator)
+  /** Pass-through async validator for Float. For constraints, define a custom AsyncValidator. */
+  given floatAsyncValidator: AsyncValidator[Float] = fromSync(Validator.floatValidator)
 
-  /** Asynchronous validator for finite double-precision numbers.
-    *
-    * Validates that a double value is finite (not NaN or infinite). This validator is lifted from
-    * the corresponding synchronous validator and is used as a fallback when no custom double
-    * validator is provided.
-    */
-  given finiteDoubleAsyncValidator: AsyncValidator[Double] = fromSync(Validator.finiteDoubleValidator)
+  /** Pass-through async validator for Double. For constraints, define a custom AsyncValidator. */
+  given doubleAsyncValidator: AsyncValidator[Double] = fromSync(Validator.doubleValidator)
 
-  /** Asynchronous validator for non-empty strings.
-    *
-    * Validates that a string value is not empty. This validator is lifted from the corresponding
-    * synchronous validator and is used as a fallback when no custom string validator is provided.
-    */
-  given nonEmptyStringAsyncValidator: AsyncValidator[String] = fromSync(Validator.nonEmptyStringValidator)
+  /** Pass-through async validator for String. For constraints, define a custom AsyncValidator. */
+  given stringAsyncValidator: AsyncValidator[String] = fromSync(Validator.stringValidator)
 
   /** Asynchronous validator for boolean values.
     *
